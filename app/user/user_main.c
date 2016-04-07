@@ -87,7 +87,7 @@ extern uint32 _lit4_end[]; // addr end BSS in IRAM
 void ICACHE_FLASH_ATTR user_init(void) {
 	sys_read_cfg();
 	if(!syscfg.cfg.b.debug_print_enable) system_set_os_print(0);
-	//GPIO0_MUX = VAL_MUX_GPIO0_SDK_DEF;
+	GPIO0_MUX = VAL_MUX_GPIO0_SDK_DEF;
 	GPIO4_MUX = VAL_MUX_GPIO4_SDK_DEF;
 	GPIO5_MUX = VAL_MUX_GPIO5_SDK_DEF;
 	GPIO12_MUX = VAL_MUX_GPIO12_SDK_DEF;

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html><head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Fans Setup</title>
+	<link rel="stylesheet" href="../style.css">
+	<script src="/scripts.js"></script>
+	<script src="/site.js"></script>
+</head><body>
+~inc:menu0.inc~
+	<div class="content">
+		<h2 class="title">Fans Setup</h2>
+		<form method="post" action="" onsubmit="SubmitFunction()">
+			<table class="form">
+				<tr>
+					<td class="label">Fan RF channel:</td>
+					<td><input title='0..126' name='cfg_fan_rf_channel' maxlength='4' value='~cfg_fan_rf_channel~'></td>
+				</tr>
+				<tr>
+					<td class="label">Receive address:</td>
+					<td><input title='0x00..0xFF' name='cfg_fan_address_LSB' maxlength='4' value='~cfg_fan_address_LSB~'></td>
+				</tr>
+
+
+
+ 			</table>
+		<p class="center">
+			<input type='hidden' name='cfg_co2_save_fans' value='1'>
+			<input type='submit' value='Set Config' class="button">
+		</p>
+ 		</form>
+	</div>
+~inc:footer.inc~
+<script type="text/javascript">
+setFormCheckBoxes(document.forms[0]);
+function SubmitFunction() {
+	var inputs = document.forms[0].getElementsByTagName('input');
+	for(var i=0; i<inputs.length; i++){
+		var f = inputs[i];
+		if(f.getAttribute('type') == 'checkbox'){
+			if(f.checked) {
+				f.value = '1';
+			} else {
+				f.checked = true;
+				f.value = '0';
+			}
+		}
+	}
+}
+</script>
+</body></html>

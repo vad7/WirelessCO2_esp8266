@@ -1,9 +1,9 @@
-<h3 class="top">Power Meter</h3>
+<h3 class="top">CO2 Meter</h3>
 <div class="menu">
 	<div>
 		<a href="/index.htm">Main</a>
 		<a href="/history.htm">History</a>
-		<a href="/powercnt.htm">Peak chart</a>
+		<a href="/peak.htm">Peak chart</a>
 	</div>
 	<div>
 		<a href="/protect/setmeter.htm">Setup meter</a>

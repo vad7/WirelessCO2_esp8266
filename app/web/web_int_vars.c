@@ -334,13 +334,31 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 			update_mux_txd1();
 		}
 		else ifcmp("co2_") {
-			cstr+=6;
+			cstr += 4;
 			ifcmp("csv_delim") cfg_co2.csv_delimiter = pvar[0];
-			else ifcmp("reset_data") {
-				if(os_strcmp(pvar, "RESET") == 0) ; //_clear_all_data();
-			}
+			else ifcmp("rf_channel") cfg_co2.sensor_rf_channel = val;
+	        else ifcmp("address_LSB") cfg_co2.address_LSB = val;
+	        else ifcmp("fans") cfg_co2.fans = val;
+	        else ifcmp("fan_speed_threshold") str_array_w(pvar, cfg_co2.fan_speed_threshold, FAN_SPEED_MAX);
+	        else ifcmp("night_start") {
+	        	cstr += 11;
+	        	ifcmp("_wd") cfg_co2.night_start_wd = val;
+	        	else cfg_co2.night_start = val;
+	        }
+	        else ifcmp("night_end") {
+	        	cstr += 9;
+	        	ifcmp("_wd") cfg_co2.night_end_wd = val;
+	        	else cfg_co2.night_end = val;
+	        }
+//			else ifcmp("reset_data") {
+//				if(os_strcmp(pvar, "RESET") == 0) ; //_clear_all_data();
+//			}
 			else ifcmp("save") {
-				if(val == 1) write_wireless_co2_cfg();
+				if(val == 1) {
+					cstr += 4;
+					ifcmp("_fans") write_wireless_fans_cfg();
+					else write_wireless_co2_cfg();
+				}
 			}
 		}
         else ifcmp("iot_") {

@@ -81,10 +81,13 @@
 #define NRF24_ReceiveMode			(1<<NRF24_BIT_PRIM_RX)
 #define NRF24_TransmitMode			0
 
-#define NRF24_Transmitting			1
-#define NRF24_Transmit_Ok			2
-#define NRF24_Transmit_Error		3
-#define NRF24_Transmit_Timeout		4
+typedef enum
+{
+	NRF24_Transmitting = 0,
+	NRF24_Transmit_Ok,
+	NRF24_Transmit_Error,
+	NRF24_Transmit_Timeout,
+} NRF25_TRANSMIT_STATUS;
 
 uint8_t		NRF24_transmit_cnt;
 volatile uint8_t NRF24_transmit_status; // 1 - ok, 2 - max retransmit count reached, 3 - module is not responses.

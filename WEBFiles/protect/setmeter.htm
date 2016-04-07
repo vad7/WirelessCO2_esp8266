@@ -1,71 +1,88 @@
 <!DOCTYPE html>
 <html><head>
 	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
-	<title>Power Meter Setup</title>
+	<title>CO2 Meter Setup</title>
 	<link rel="stylesheet" href="../style.css">
 	<script src="/scripts.js"></script>
 	<script src="/site.js"></script>
 </head><body>
 ~inc:menu0.inc~
 	<div class="content">
-		<h2 class="title">Power Meter Setup</h2>
+		<h2 class="title">CO2 Meter Setup</h2>
 		<form method="post" action="" onsubmit="SubmitFunction()">
 			<table class="form">
 				<tr>
-					<td class="label">Total cnt, kWt * ~cfg_meter_PulsesPerKWt~:
-					<input title='change?' type='checkbox' name='change_totalcnt' value='0'>
-					</td>
-					<td><input title='0..4294967295' name='cfg_meter_TotalCnt' maxlength='10' value='~TotalCnt~'></td>
+					<td class="label">Sensor RF channel:</td>
+					<td><input title='0..126' name='cfg_co2_rf_channel' maxlength='4' value='~cfg_co2_rf_channel~'></td>
 				</tr>
 				<tr>
-					<td class="label">Pulses per kWt:</td>
-					<td><input title='100,200,300,..10000' name='cfg_meter_PulsesPerKWt' maxlength='5' value='~cfg_meter_PulsesPerKWt~'></td>
+					<td class="label">Receive address:</td>
+					<td><input title='0x00..0xFF' name='cfg_co2_address_LSB' maxlength='4' value='~cfg_co2_address_LSB~'></td>
+				</tr>
+				<tr>
+					<td class="label">Fans:</td>
+					<td><input title='1..10' name='cfg_co2_fans' maxlength='4' value='~cfg_co2_fans~'></td>
+				</tr>
+				<tr><a href="setfans.htm">Configure Fans...</a>
+				</tr>
+				<tr>
+					<td class="label">Fan speed thresholds:</td>
+					<td><input title='n,n,n,n,n,n' name='cfg_co2_fan_speed_threshold' maxlength='50' value='~cfg_co2_fan_speed_threshold~'></td>
+				</tr>
+				<tr>
+					<td class="label">Night start:</td>
+					<td><input title='hhmm' name='cfg_co2_night_start' maxlength='4' value='~cfg_co2_night_start~'></td>
+				</tr>
+				<tr>
+					<td class="label">Night end:</td>
+					<td><input title='hhmm' name='cfg_co2_night_end' maxlength='4' value='~cfg_co2_night_end~'></td>
+				</tr>
+				<tr>
+					<td class="label">Weekend Night start:</td>
+					<td><input title='hhmm' name='cfg_co2_night_start_wd' maxlength='4' value='~cfg_co2_night_start_wd~'></td>
+				</tr>
+				<tr>
+					<td class="label">Weekend Night end:</td>
+					<td><input title='hhmm' name='cfg_co2_night_end_wd' maxlength='4' value='~cfg_co2_night_end_wd~'></td>
 				</tr>
 				<tr>
 					<td class="label">Delimiter in .csv:</td>
-					<td><input title='char' name='cfg_meter_csv_delim' maxlength='1' value='~cfg_meter_csv_delim~'></td>
+					<td><input title='char' name='cfg_co2_csv_delim' maxlength='1' value='~cfg_co2_csv_delim~'></td>
 				</tr>
 				<tr>
 					<td class="label">IoT cloud enable:</td>
-					<td><input type="hidden" name='cfg_iot_cloud_enable' value='0'><input type='checkbox' name='cfg_iot_cloud_enable' value='1'></td>
+					<td><input type='checkbox' name='cfg_iot_cloud_enable' value='~cfg_iot_cloud_enable~'></td>
 				</tr>
 				<tr>
 					<td class="label">IoT cloud setup:
 					<input title='change?' type='checkbox' name='change_iot_ini' value='0'></td>
 					<td><textarea title='protect/iot_cloud.ini' name='cfg_iot_ini' rows=4 cols=50 wrap="off" maxlength=1023>~cfg_iot_ini~</textarea></td>
 				</tr>
-				<tr>
-					<td class="label">FRAM size (bytes):</td>
-					<td><input title='1024..' name='cfg_meter_Fram_Size' maxlength='10' value='~cfg_meter_Fram_Size~'></td>
-				</tr>
-				<tr>
-					<td class="label">Frequence of i2c bus:</td>
-					<td><input title='100..400' name='cfg_meter_i2c_freq' maxlength='4' value='~cfg_meter_i2c_freq~'></td>
-				</tr>
-				<tr>
-					<td class="label">Reset all data:</td>
-					<td><input title='Enter magic word' name='cfg_meter_reset_data' maxlength='10' value=''></td>
-				</tr>
  			</table>
 		<p class="center">
-			<input type='hidden' name='cfg_meter_save' value='1'>
+			<input type='hidden' name='cfg_co2_save' value='1'>
 			<input type='submit' value='Set Config' class="button">
 		</p>
  		</form>
 	</div>
 ~inc:footer.inc~
 <script type="text/javascript">
-var cfg = {
-	cfg_iot_cloud_enable:"~cfg_iot_cloud_enable~"
-}
-setFormValues(document.forms[0], cfg);
-
+setFormCheckBoxes(document.forms[0]);
 function SubmitFunction() {
-	if(!document.getElementsByName('change_totalcnt')[0].checked) {
-		document.getElementsByName('cfg_meter_TotalCnt')[0].removeAttribute('name');
-	}
-	if(!document.getElementsByName('change_iot_ini')[0].checked) {
-		document.getElementsByName('cfg_iot_ini')[0].removeAttribute('name');
+	var inputs = document.forms[0].getElementsByTagName('input');
+	for(var i=0; i<inputs.length; i++){
+		var f = inputs[i];
+		if(f.getAttribute('type') == 'checkbox'){
+			if(f.checked) {
+				f.value = '1';
+			} else {
+				if(f.name == 'change_iot_ini') document.getElementsByName('cfg_iot_ini')[0].removeAttribute('name');
+				else {
+					f.checked = true;
+					f.value = '0';
+				}
+			}
+		}
 	}
 }
 </script>
