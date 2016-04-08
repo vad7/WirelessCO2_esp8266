@@ -350,6 +350,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 	        	ifcmp("_wd") cfg_co2.night_end_wd = val;
 	        	else cfg_co2.night_end = val;
 	        }
+	        else ifcmp("fans_speed_override") cfg_co2.fans_speed_override = val;
 //			else ifcmp("reset_data") {
 //				if(os_strcmp(pvar, "RESET") == 0) ; //_clear_all_data();
 //			}
@@ -360,6 +361,17 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 					else write_wireless_co2_cfg();
 				}
 			}
+		}
+		else ifcmp("fan_") {
+			cstr += 4;
+        	CFG_FAN *f = &cfg_fans[Web_cfg_fan_];
+	        ifcmp("rf_channel") f->rf_channel = val;
+	        else ifcmp("address_LSB") f->address_LSB = val;
+	        else ifcmp("speed_min") f->speed_min = val;
+	        else ifcmp("speed_max") f->speed_max = val;
+	        else ifcmp("override_at_night") f->override_at_night = val;
+	        else ifcmp("speed_night") f->speed_night = val;
+	        else ifcmp("flags") f->flags = val;
 		}
         else ifcmp("iot_") {
         	cstr += 4;

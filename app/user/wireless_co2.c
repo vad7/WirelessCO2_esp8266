@@ -53,9 +53,42 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 	uint32_t average = 0;
 	for(i = 0; i < CO2LevelAverageArrayLength; i++) average += CO2LevelAverageArray[i];
 	average /= CO2LevelAverageArrayLength;
-
-
-
+	int8_t fanspeed;
+	for(fanspeed = 0; fanspeed < FAN_SPEED_MAX; fanspeed++) {
+		uint16_t tr = cfg_co2.fan_speed_threshold[fanspeed];
+		if(average < tr) {
+			// if there is a decrease of CO2 level - check delta
+			if(fan_speed_previous <= fanspeed || (tr - average) >= cfg_co2.fan_speed_delta) break;
+		}
+	}
+	fan_speed_previous = fanspeed;
+	if((fanspeed += cfg_co2.fans_speed_override) > FAN_SPEED_MAX) fanspeed = FAN_SPEED_MAX;
+	if(fanspeed < 0) fanspeed = 0;
+	struct tm tm;
+	time_t t = get_sntp_localtime();
+	_localtime(&t, &tm);
+	uint16 st, end, tt = tm.tm_hour * 60 + tm.tm_min; // min
+	if(tm.tm_wday == 0 || tm.tm_wday == 6) { // Weekend?
+		st = cfg_co2.night_start_wd;
+		end = cfg_co2.night_end_wd;
+	} else {
+		st = cfg_co2.night_start;
+		end = cfg_co2.night_end;
+	}
+	st = (st / 100) * 60 + st % 100;
+	end = (end / 100) * 60 + end % 100;
+	now_night = ((end > st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)));
+	uint8 fan;
+	for(fan = 0; fan < cfg_co2.fans; fan++) {
+		CFG_FAN *f = &cfg_fans[fan];
+		if(now_night) {
+			if(f->override_at_night == 1) fanspeed = f->speed_night; // =
+			else if(f->override_at_night == 2) fanspeed += f->speed_night; // +
+		}
+		if(fanspeed < f->speed_min) fanspeed = f->speed_min;
+		if(fanspeed > f->speed_max) fanspeed = f->speed_max;
+		f->speed_current = fanspeed;
+	}
 }
 
 void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
@@ -65,7 +98,6 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 		if(NRF24_SetAddresses(cfg_co2.address_LSB)) {
 			NRF24_SetMode(NRF24_ReceiveMode);
 			CO2_work_flag = 1;
-
 		} else {
 			#if DEBUGSOO > 4
 				os_printf("NRF-SetAddr error\n");
@@ -83,6 +115,7 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 			CO2_send_flag = 0;
 		}
 	} else if(CO2_work_flag == 2) { // send
+		if(cfg_co2.fans == 0) goto xNextFAN; // skip
 		CFG_FAN *f = &cfg_fans[CO2_send_fan_idx];
 		if(CO2_send_flag == 0) { // start
 			if(f->flags & 1) goto xNextFAN; // skip
@@ -93,7 +126,7 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 				NRF24_Transmit((uint8 *)&co2_send_data);
 				CO2_send_flag = 1;
 				#if DEBUGSOO > 4
-					os_printf("NRF-Transmit %d, %u\n", CO2_send_fan_idx, system_get_time());
+					os_printf("NRF-Transmit %d <= %d (%u)\n", CO2_send_fan_idx, f->speed_current, system_get_time());
 				#endif
 			} else {
 				#if DEBUGSOO > 4
@@ -120,12 +153,21 @@ xNextFAN:
 
 void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 {
-	if(flash_read_cfg(&cfg_co2, ID_CFG_CO2, sizeof(cfg_co2)) != sizeof(CFG_CO2)) {
+	if(flash_read_cfg(&cfg_co2, ID_CFG_CO2, sizeof(cfg_co2)) != sizeof(cfg_co2)) {
 		// defaults
-		os_memset(&cfg_co2, 0, sizeof(CFG_CO2));
+		os_memset(&cfg_co2, 0, sizeof(cfg_co2));
 		cfg_co2.csv_delimiter = ',';
 		cfg_co2.sensor_rf_channel = 120;
+		cfg_co2.address_LSB = 0xC1;
+		cfg_co2.fans = 0;
+		cfg_co2.fan_speed_threshold[0] = 500;
+		cfg_co2.fan_speed_threshold[1] = 550;
+		cfg_co2.fan_speed_threshold[2] = 600;
+		cfg_co2.fan_speed_threshold[3] = 800;
+		cfg_co2.fan_speed_threshold[4] = 900;
+		cfg_co2.fan_speed_threshold[5] = 1100;
 	}
+	fan_speed_previous = 0;
 	ets_timer_disarm(&user_loop_timer);
 	os_timer_setfn(&user_loop_timer, (os_timer_func_t *)user_loop, NULL);
 	ets_timer_arm_new(&user_loop_timer, 1000, 1, 1); // 1s, repeat

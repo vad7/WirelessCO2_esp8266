@@ -11,6 +11,11 @@
 <span id="time__~CO2_last_time~_1">?</span>
 </p>
 <br><br><br>
+<table id="fans" class="mdbtab">
+	<tr><th>Fan</th><th>Speed</th><th>Last send</th></tr>
+	~Fans_Table_body~
+</table>
+<br><br><br>
 Time: <span id="time__~sntp_time~_2">No SNTP</span> (~SNTP_St~)<br>
 Start time: <span id="timer_~sys_mactime~_3">?</span><br>
 Power: <span title="Vdd" id="syspower">?</span> V<br>
@@ -18,4 +23,7 @@ Power: <span title="Vdd" id="syspower">?</span> V<br>
 ~inc:footer.inc~
 ~inc:vdd.inc~
 ~inc:time.inc~
+<script type="text/javascript">
+	if(~cfg_co2_fans~ == 0) document.all.fans.hidden = true;
+</script>
 </body></html>

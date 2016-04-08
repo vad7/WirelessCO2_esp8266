@@ -37,7 +37,14 @@
 #define SPI 0
 #define HSPI 1
 
-#define SPI_NOT_USE_CS		0	// 1 - CS pin is not used by hardware
+//|Pin Name| GPIO # | HSPI Function |
+//|--------|--------|---------------|
+//|  MTDI  | GPIO12 | MISO (DIN)    |
+//|  MTCK  | GPIO13 | MOSI (DOUT)   |
+//|  MTMS  | GPIO14 | CLOCK         |
+//|  MTDO  | GPIO15 | CS / SS       |
+
+#define SPI_NOT_USE_CS		1	// 1 - CS pin is not used by hardware
 #define SPI_CLK_80MHZ_NODIV 0	// 1 - full 80Mhz clock
 
 #define SPI_BYTE_ORDER_HIGH_TO_LOW 1

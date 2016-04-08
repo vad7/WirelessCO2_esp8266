@@ -9,11 +9,11 @@
 #include "driver/nrf24l01.h"
 
 #define NRF24_CE_GPIO			5
-#define NRF24_CS_GPIO			15
+#define NRF24_CSN_GPIO			15
 #define NRF24_SET_CE_HI			GPIO_OUT_W1TS = (1<<NRF24_CE_GPIO)  // Start transmit
 #define NRF24_SET_CE_LOW		GPIO_OUT_W1TC = (1<<NRF24_CE_GPIO)
-#define NRF24_SET_CSN_HI		// not need when HSPI used
-#define NRF24_SET_CSN_LOW		// not need when HSPI used
+#define NRF24_SET_CSN_HI		GPIO_OUT_W1TS = (1<<NRF24_CSN_GPIO)
+#define NRF24_SET_CSN_LOW		GPIO_OUT_W1TC = (1<<NRF24_CSN_GPIO)
 
 //#define NRF24_RF_CHANNEL		2 // default
 #define NRF24_ADDRESS_LEN		3 // 3..5 bytes
@@ -22,7 +22,7 @@
 
 uint8_t NRF24_Buffer[NRF24_PAYLOAD_LEN]; // MUST be EQUAL or GREATER than Address field width!!!
 
-uint8_t NRF24_INIT_DATA[] = {
+uint8_t __attribute__((aligned(2))) NRF24_INIT_DATA[] = {
 //	NRF24_CMD_W_REGISTER | NRF24_REG_FEATURE,	(0<<NRF24_BIT_EN_DPL) | (0<<NRF24_BIT_EN_ACK_PAY), // Dynamic Payload Length, Enables Payload with ACK
 //	NRF24_CMD_W_REGISTER | NRF24_REG_DYNPD,		0b000000, // Dynamic payload
 //	NRF24_CMD_W_REGISTER | NRF24_REG_RF_CH,		NRF24_RF_CHANNEL, // RF channel
@@ -153,13 +153,20 @@ void ICACHE_FLASH_ATTR NRF24_Powerdown(void)
 // After init transmit must be delayed
 void ICACHE_FLASH_ATTR NRF24_init(void)
 {
-	NRF24_SET_CE_LOW;
-	GPIO_ENABLE_W1TS = (1<<NRF24_CE_GPIO); // Configure GPIO port to output
+	ets_intr_lock();
 	spi_init(HSPI);
+	SET_PIN_FUNC(NRF24_CE_GPIO, (MUX_FUN_IO_PORT(NRF24_CE_GPIO) )); // установить функцию GPIOx в режим порта i/o
+	SET_PIN_PULLUP_DIS(NRF24_CE_GPIO);
+	GPIO_ENABLE_W1TS = (1<<NRF24_CE_GPIO); // Configure GPIO port to output
+	NRF24_SET_CE_LOW;
+	SET_PIN_FUNC(NRF24_CSN_GPIO, (MUX_FUN_IO_PORT(NRF24_CSN_GPIO) )); // установить функцию GPIOx в режим порта i/o
+	SET_PIN_PULLUP_DIS(NRF24_CSN_GPIO);
+	GPIO_ENABLE_W1TS = (1<<NRF24_CSN_GPIO); // Configure GPIO port to output
 	NRF24_SET_CSN_HI;
+	ets_intr_unlock();
 	uint16_t i = 0, d;
 	do {
-		d = ((uint16 *)NRF24_INIT_DATA)[i++];
+		d = ((uint16 *)NRF24_INIT_DATA)[i++]; // array must be aligned(2)
 		NRF24_WriteByte(d & 0xFF, d / 256);
 	} while(i < sizeof(NRF24_INIT_DATA) / 2);
 }

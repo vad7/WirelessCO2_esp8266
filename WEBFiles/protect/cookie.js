@@ -34,9 +34,6 @@ function NewCookie(add) {
 		document.getElementById('pmem').contentWindow.location.reload();
 	}
 }
-setCookieElem('start', '0x40000000');
-setCookieElem('set_ramaddr', '0x3FFF0000');
-setCookieElem('set_ramdata', '0x12345678');
 function UpTxt(xD, n, v) {
 	var x = getXMLValue(xD, n, v);
 	if (x == '?')

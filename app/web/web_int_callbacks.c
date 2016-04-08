@@ -744,23 +744,35 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 		    else ifcmp("co2_") {
 	        	cstr += 4;
 		        ifcmp("csv_delim") tcp_puts("%c", cfg_co2.csv_delimiter);
-		        else ifcmp("rf_channel") tcp_puts("%c", cfg_co2.sensor_rf_channel);
-		        else ifcmp("address_LSB") tcp_puts("%c", cfg_co2.address_LSB);
-		        else ifcmp("fans") tcp_puts("%c", cfg_co2.fans);
+		        else ifcmp("rf_channel") tcp_puts("%d", cfg_co2.sensor_rf_channel);
+		        else ifcmp("address_LSB") tcp_puts("0x%X", cfg_co2.address_LSB);
+		        else ifcmp("fans") tcp_puts("%d", cfg_co2.fans);
 		        else ifcmp("fan_speed_threshold") {
 		        	int16_t i;
 		        	for(i = 0; i < FAN_SPEED_MAX; i++) tcp_puts("%u%s", cfg_co2.fan_speed_threshold[i], i < FAN_SPEED_MAX-1 ? "," : "");
 		        }
 		        else ifcmp("night_start") {
 		        	cstr += 11;
-		        	ifcmp("_wd") tcp_puts("%u", cfg_co2.night_start_wd);
-		        	else tcp_puts("%u", cfg_co2.night_start);
+		        	ifcmp("_wd") tcp_puts("%04u", cfg_co2.night_start_wd);
+		        	else tcp_puts("%04u", cfg_co2.night_start);
 		        }
 		        else ifcmp("night_end") {
 		        	cstr += 9;
-		        	ifcmp("_wd") tcp_puts("%u", cfg_co2.night_end_wd);
-		        	else tcp_puts("%u", cfg_co2.night_end);
+		        	ifcmp("_wd") tcp_puts("%04u", cfg_co2.night_end_wd);
+		        	else tcp_puts("%04u", cfg_co2.night_end);
 		        }
+		        else ifcmp("fans_speed_override") tcp_puts("%d", cfg_co2.fans_speed_override);
+		    }
+		    else ifcmp("fan_") {
+	        	cstr += 4;
+	        	CFG_FAN *f = &cfg_fans[Web_cfg_fan_];
+		        ifcmp("rf_channel") tcp_puts("%d", f->rf_channel);
+		        else ifcmp("address_LSB") tcp_puts("0x%X", f->address_LSB);
+		        else ifcmp("speed_min") tcp_puts("%d", f->speed_min);
+		        else ifcmp("speed_max") tcp_puts("%d", f->speed_max);
+		        else ifcmp("override_at_night") tcp_puts("%d", f->override_at_night);
+		        else ifcmp("speed_night") tcp_puts("%d", f->speed_night);
+		        else ifcmp("flags") tcp_puts("%d", f->flags);
 		    }
 	        else ifcmp("iot_") {
 	        	cstr += 4;
@@ -1187,6 +1199,15 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         	cstr += 4;
         	ifcmp("current") tcp_puts("%u", co2_send_data.CO2level);
         	else ifcmp("last_time") tcp_puts("%u", sntp_local_to_UTC_time(CO2_last_time));
+        }
+        else ifcmp("now_night") tcp_puts("%d", now_night);
+        else ifcmp("fan_speed_") {
+        	cstr += 10;
+        	ifcmp("previous") tcp_puts("%d", fan_speed_previous);
+        	else {
+        		uint8 idx = rom_atoi(cstr);
+        		if(idx < cfg_co2.fans) tcp_puts("%d", cfg_fans[idx].speed_current);
+        	}
         }
 //
 		else tcp_put('?');

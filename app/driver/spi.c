@@ -196,7 +196,13 @@ uint8 ICACHE_FLASH_ATTR spi_write_read_byte(uint8 dout_data)
 	//########## Return DIN data ##########//
 	while(spi_busy(spi_no));	//wait for SPI transaction to complete
 
+#if DEBUGSOO > 4
+	uint8 i = READ_PERI_REG(SPI_W0(spi_no)); // 8 bits.
+	os_printf(" SPI: %x/%x ", dout_data, i);
+	return i;
+#else
 	return READ_PERI_REG(SPI_W0(spi_no)); // 8 bits.
+#endif
 }
 
 #else

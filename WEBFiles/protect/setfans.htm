@@ -12,6 +12,11 @@
 		<form method="post" action="" onsubmit="SubmitFunction()">
 			<table class="form">
 				<tr>
+				<td class="label">Select fan:</td>
+				<td><select title="fan" id="cfg_fan_" onchange="ShowNewFan();">
+				</select></td>
+				</tr>
+				<tr>
 					<td class="label">Fan RF channel:</td>
 					<td><input title='0..126' name='cfg_fan_rf_channel' maxlength='4' value='~cfg_fan_rf_channel~'></td>
 				</tr>
@@ -19,9 +24,33 @@
 					<td class="label">Receive address:</td>
 					<td><input title='0x00..0xFF' name='cfg_fan_address_LSB' maxlength='4' value='~cfg_fan_address_LSB~'></td>
 				</tr>
-
-
-
+				<tr>
+					<td class="label">Speed Min:</td>
+					<td><input title='0..6' name='cfg_fan_speed_min' maxlength='4' value='~cfg_fan_speed_min~'></td>
+				</tr>
+				<tr>
+					<td class="label">Speed Max:</td>
+					<td><input title='0..6' name='cfg_fan_speed_max' maxlength='4' value='~cfg_fan_speed_max~'></td>
+				</tr>
+				<tr>
+					<td class="label">Override at night:</td>
+					<td><select name='cfg_fan_override_at_night'>
+						<option value='0'>No</option>
+						<option value='1'>=Night speed</option>
+						<option value='2'>+Night speed</option>
+					</select></td>
+				</tr>
+				<tr>
+					<td class="label">Night speed / delta:</td>
+					<td><input title='0..6' name='cfg_fan_speed_night' maxlength='4' value='~cfg_fan_speed_night~'></td>
+				</tr>
+				<tr>
+					<td class="label">Flags:</td>
+					<td><select name='cfg_fan_flags'>
+						<option value='0'>-</option>
+						<option value='1'>Skip fan</option>
+					</select></td>
+				</tr>
  			</table>
 		<p class="center">
 			<input type='hidden' name='cfg_co2_save_fans' value='1'>
@@ -30,7 +59,15 @@
  		</form>
 	</div>
 ~inc:footer.inc~
+<script src="cookies.js"></script>
 <script type="text/javascript">
+var f = document.getElementById("cfg_fan_");
+for(var i=1; i <= ~cfg_co2_fans~; i++) {
+	var o = document.createElement("option");
+	o.text = i;
+	o.value = i;
+	f.add(o);
+}
 setFormCheckBoxes(document.forms[0]);
 function SubmitFunction() {
 	var inputs = document.forms[0].getElementsByTagName('input');
@@ -45,6 +82,14 @@ function SubmitFunction() {
 			}
 		}
 	}
+}
+var val = getCookie("cfg_fan_");
+if (val == null) {
+	SetCookie("cfg_fan_", "0");
+}
+function ShowNewFan() {
+	SetCookie("cfg_fan_", document.getElementById("cfg_fan_").value);
+	location.reload();
 }
 </script>
 </body></html>
