@@ -54,7 +54,6 @@ uint32 Web_ShowByDay; 		// ~ShowByDay~
 uint32 Web_cfg_fan_;		// fan idx for change setting
 //
 
-uint32 abs_64(sint64 n);
 void wireless_co2_init(uint8 index) ICACHE_FLASH_ATTR;
 void user_loop(void) ICACHE_FLASH_ATTR;
 bool write_wireless_co2_cfg(void) ICACHE_FLASH_ATTR;

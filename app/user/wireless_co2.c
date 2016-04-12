@@ -24,13 +24,6 @@ uint8 nrf_last_rf_channel = 255;
 uint16_t CO2LevelAverageIdx = CO2LevelAverageArrayLength;
 uint16_t CO2LevelAverageArray[CO2LevelAverageArrayLength];
 
-// abs() 64 bit -> uinsigned 32 bit
-uint32 abs_64(sint64 n)
-{
-	return n < 0 ? -n : n;
-}
-
-
 void ICACHE_FLASH_ATTR set_new_rf_channel(uint8 ch)
 {
 	if(nrf_last_rf_channel != ch) {

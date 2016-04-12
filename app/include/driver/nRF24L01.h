@@ -92,11 +92,24 @@ typedef enum
 uint8_t		NRF24_transmit_cnt;
 volatile uint8_t NRF24_transmit_status; // 1 - ok, 2 - max retransmit count reached, 3 - module is not responses.
 
+#ifdef SPI_BLOCK
+
+uint8_t NRF24_SendCommand(uint8_t cmd) ICACHE_FLASH_ATTR; // Send command & receive status
+void NRF24_WriteByte(uint8_t cmd, uint8_t value) ICACHE_FLASH_ATTR;
+#define NRF24_ReadArray(cmd, array, len) spi_write_read_block(SPI_RECEIVE, cmd, array, len)
+#define NRF24_WriteArray(cmd, array, len) spi_write_read_block(SPI_SEND, cmd, array, len)
+
+
+#else
+
 uint8_t NRF24_ReadRegister(uint8_t reg) ICACHE_FLASH_ATTR;
 void NRF24_ReadArray(uint8_t cmd, uint8_t *array, uint8_t len) ICACHE_FLASH_ATTR;
 void NRF24_WriteByte(uint8_t cmd, uint8_t value) ICACHE_FLASH_ATTR;
 void NRF24_WriteArray(int8_t cmd, uint8_t *array, uint8_t len) ICACHE_FLASH_ATTR;
 uint8_t NRF24_SendCommand(uint8_t cmd) ICACHE_FLASH_ATTR; // Send command & receive status
+
+#endif
+
 void NRF24_SetMode(uint8_t mode) ICACHE_FLASH_ATTR; // Set mode in CONFIG reg
 uint8_t NRF24_Receive(uint8_t *payload) ICACHE_FLASH_ATTR; // Receive in payload, return data pipe number + 1 if success
 void NRF24_Transmit(uint8_t *payload) ICACHE_FLASH_ATTR; // Transmit payload, return 0 if success, 1 - max retransmit count reached, 2 - module not response.

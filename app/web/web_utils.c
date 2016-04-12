@@ -17,6 +17,7 @@
 
 #define mMIN(a, b)  ((a<b)?a:b)
 
+// Convert string to int. Skip leading spaces, stops on non numeric char.
 int ICACHE_FLASH_ATTR rom_atoi(const char *s)
 {
 	int n=0, neg=0;

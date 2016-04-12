@@ -9,11 +9,16 @@
 #include "driver/nrf24l01.h"
 
 #define NRF24_CE_GPIO			5
-#define NRF24_CSN_GPIO			15
+//#define NRF24_CSN_GPIO			15 // if ommited - hardware CS
 #define NRF24_SET_CE_HI			GPIO_OUT_W1TS = (1<<NRF24_CE_GPIO)  // Start transmit
 #define NRF24_SET_CE_LOW		GPIO_OUT_W1TC = (1<<NRF24_CE_GPIO)
+#ifdef NRF24_CSN_GPIO
 #define NRF24_SET_CSN_HI		GPIO_OUT_W1TS = (1<<NRF24_CSN_GPIO)
 #define NRF24_SET_CSN_LOW		GPIO_OUT_W1TC = (1<<NRF24_CSN_GPIO)
+#else
+#define NRF24_SET_CSN_HI
+#define NRF24_SET_CSN_LOW
+#endif
 
 //#define NRF24_RF_CHANNEL		2 // default
 #define NRF24_ADDRESS_LEN		3 // 3..5 bytes
@@ -36,6 +41,26 @@ uint8_t __attribute__((aligned(2))) NRF24_INIT_DATA[] = {
 uint8_t NRF24_BASE_ADDR[] = { 0xC8, 0xC8 }; // Address MSBs: 2..3
 
 os_timer_t 	NRF24_timer DATA_IRAM_ATTR;
+
+#ifdef SPI_BLOCK
+
+// Send command & receive status
+uint8_t ICACHE_FLASH_ATTR NRF24_SendCommand(uint8_t cmd)
+{
+	uint8 buf[1];
+	buf[0] = cmd;
+	spi_write_read_block(SPI_SEND | SPI_RECEIVE, 0, buf, 1);
+	return buf[0];
+}
+
+void ICACHE_FLASH_ATTR NRF24_WriteByte(uint8_t cmd, uint8_t value)
+{
+	uint8 buf[1];
+	buf[0] = value;
+	spi_write_read_block(SPI_SEND, cmd, buf, 1);
+}
+
+#else
 
 uint8_t ICACHE_FLASH_ATTR NRF24_ReadRegister(uint8_t reg)
 {
@@ -78,6 +103,10 @@ uint8_t ICACHE_FLASH_ATTR NRF24_SendCommand(uint8_t cmd)
 	NRF24_SET_CSN_HI;
 	return result;
 }
+
+
+
+#endif
 
 // Set mode in CONFIG reg
 void ICACHE_FLASH_ATTR NRF24_SetMode(uint8_t mode)
@@ -159,14 +188,18 @@ void ICACHE_FLASH_ATTR NRF24_init(void)
 	SET_PIN_PULLUP_DIS(NRF24_CE_GPIO);
 	GPIO_ENABLE_W1TS = (1<<NRF24_CE_GPIO); // Configure GPIO port to output
 	NRF24_SET_CE_LOW;
+#ifdef NRF24_CSN_GPIO
 	SET_PIN_FUNC(NRF24_CSN_GPIO, (MUX_FUN_IO_PORT(NRF24_CSN_GPIO) )); // установить функцию GPIOx в режим порта i/o
 	SET_PIN_PULLUP_DIS(NRF24_CSN_GPIO);
 	GPIO_ENABLE_W1TS = (1<<NRF24_CSN_GPIO); // Configure GPIO port to output
 	NRF24_SET_CSN_HI;
+#endif
 	ets_intr_unlock();
-	uint16_t i = 0, d;
-	do {
-		d = ((uint16 *)NRF24_INIT_DATA)[i++]; // array must be aligned(2)
-		NRF24_WriteByte(d & 0xFF, d / 256);
-	} while(i < sizeof(NRF24_INIT_DATA) / 2);
+	NRF24_WriteArray(NRF24_CMD_NOP, NRF24_INIT_DATA, sizeof(NRF24_INIT_DATA));
+
+//	uint16_t i = 0, d;
+//	do {
+//		d = ((uint16 *)NRF24_INIT_DATA)[i++]; // array must be aligned(2)
+//		NRF24_WriteByte(d & 0xFF, d / 256);
+//	} while(i < sizeof(NRF24_INIT_DATA) / 2);
 }

@@ -1131,11 +1131,11 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         				if(GPIO_ENABLE & (1<<n)) tcp_put('1');
         				else tcp_put('0');
         			}
-        			else ifcmp("fun") tcp_puts("%u", get_gpiox_mux_func(n));
-        			else ifcmp("pull") tcp_puts("%u", (get_gpiox_mux(n) >> GPIO_MUX_PULLDOWN_BIT) & 3);
-    	            else ifcmp("opd") tcp_put((GPIOx_PIN(n) & GPIO_PIN_DRIVER)? '1' : '0');
-    	            else ifcmp("pu") tcp_put((get_gpiox_mux(n) & (1 << GPIO_MUX_PULLUP_BIT))? '1' : '0');
-    	            else ifcmp("pd") tcp_put((get_gpiox_mux(n) & (1 << GPIO_MUX_PULLDOWN_BIT))? '1' : '0');
+        			else ifcmp("fun")	tcp_puts("%u", get_gpiox_mux_func(n));
+        			else ifcmp("pull")	tcp_puts("%u", (get_gpiox_mux(n) >> GPIO_MUX_PULLDOWN_BIT) & 3);
+    	            else ifcmp("opd")	tcp_put((GPIOx_PIN(n) & (1<<GPIO_PIN_DRIVER))? '1' : '0');
+    	            else ifcmp("pu")	tcp_put((get_gpiox_mux(n) & (1 << GPIO_MUX_PULLUP_BIT))? '1' : '0');
+    	            else ifcmp("pd")	tcp_put((get_gpiox_mux(n) & (1 << GPIO_MUX_PULLDOWN_BIT))? '1' : '0');
         			else tcp_put('?');
         		}
         		else tcp_put('?');

@@ -31,7 +31,8 @@
 //#include "uart.h"
 #include "os_type.h"
 
-#define SPI_TINY 	// Only 1 byte (8 bits) r/w functions, MSB first bite order
+//#define SPI_TINY 	// Only 1 byte (8 bits) r/w functions, MSB first bite order
+#define SPI_BLOCK	// Write, Read: command + data(max 64 bytes), full-duplex
 
 //Define SPI hardware modules
 #define SPI 0
@@ -44,10 +45,11 @@
 //|  MTMS  | GPIO14 | CLOCK         |
 //|  MTDO  | GPIO15 | CS / SS       |
 
-#define SPI_NOT_USE_CS		1	// 1 - CS pin is not used by hardware
-#define SPI_CLK_80MHZ_NODIV 0	// 1 - full 80Mhz clock
+#define SPI_NOT_USE_CS			0	// 1 - CS pin is not used by hardware
+#define SPI_CLK_80MHZ_NODIV 	0	// 1 - full 80Mhz clock
+#define DELAY_BEFORE_CHANGE_CS	0 	// set delay before and after CS change
 
-#define SPI_BYTE_ORDER_HIGH_TO_LOW 1
+#define SPI_BYTE_ORDER_HIGH_TO_LOW 0
 #define SPI_BYTE_ORDER_LOW_TO_HIGH 0
 
 #ifndef CPU_CLK_FREQ //Should already be defined in eagle_soc.h
@@ -64,6 +66,14 @@ void spi_mode(uint8 spi_no, uint8 spi_cpha,uint8 spi_cpol) ICACHE_FLASH_ATTR;
 void spi_init_gpio(uint8 spi_no, uint8 sysclk_as_spiclk) ICACHE_FLASH_ATTR;
 void spi_clock(uint8 spi_no, uint16 prediv, uint8 cntdiv) ICACHE_FLASH_ATTR;
 
+#ifdef SPI_BLOCK
+
+#define SPI_SEND 1
+#define SPI_RECEIVE 2
+
+void spi_write_read_block(uint8 sr, uint8 addr, uint8 * data, uint8 data_size) ICACHE_FLASH_ATTR;
+
+#endif
 #ifdef SPI_TINY
 
 uint8 spi_write_read_byte(uint8 dout_data) ICACHE_FLASH_ATTR; // HSPI

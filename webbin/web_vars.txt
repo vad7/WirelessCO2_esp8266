@@ -43,15 +43,10 @@ inc:grfx1.inc
 inc:grfx2.inc
 CO2_current
 inc:menu.inc
-TotalKWT
-TotalCnt
-PtrCurrent
-CntCurrent1
-CntCurrent2
-PowerCnt
-LastCnt
-TotalCntTime
-i2c_errors
+CO2_current
+fan_speed_previous
+now_night
+CO2_last_time
 iot_LastSt_time
 iot_LastSt
 wifi_ap_ssid
@@ -96,6 +91,7 @@ bin_flash_const
 bin_fram_all
 bin_flash_all
 inc:menu.inc
+inc:slider.inc
 inc:footer.inc
 gpio_inp
 gpio_out

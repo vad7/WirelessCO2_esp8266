@@ -24,7 +24,11 @@
 
 #include "hw/pin_mux_register.h"
 #include "driver/spi.h"
+#include "sdk/rom2ram.h"
 
+#if DEBUGSOO > 4
+#include "web_utils.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -41,16 +45,18 @@ void spi_init(uint8 spi_no){
 	spi_init_gpio(spi_no, SPI_CLK_80MHZ_NODIV);
 	spi_clock(spi_no, SPI_CLK_PREDIV, SPI_CLK_CNTDIV);
 #ifndef SPI_TINY
+#ifndef SPI_BLOCK
 	spi_tx_byte_order(spi_no, SPI_BYTE_ORDER_HIGH_TO_LOW);
 	spi_rx_byte_order(spi_no, SPI_BYTE_ORDER_HIGH_TO_LOW); 
 #endif
+#endif
 
-#if SPI_NOT_USE_CS == 0
+#if SPI_NOT_USE_CS == 0 && DELAY_BEFORE_CHANGE_CS
 	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD); // set delay before and after CS change
 #endif
 	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE);
 #ifdef SPI_TINY
-
+#ifndef SPI_BLOCK
 	//disable MOSI, MISO, ADDR, COMMAND, DUMMY, etc in case previously set.
 	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI|SPI_USR_MISO|SPI_USR_COMMAND|SPI_USR_ADDR|SPI_USR_DUMMY|SPI_WR_BYTE_ORDER|SPI_RD_BYTE_ORDER);
 
@@ -64,7 +70,7 @@ void spi_init(uint8 spi_no){
 	//########## Setup DOUT data ##########//
 	//enable MOSI function in SPI module, full-duplex mode
 	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI | SPI_DOUTDIN);
-
+#endif
 #endif
 }
 
@@ -174,6 +180,50 @@ void spi_clock(uint8 spi_no, uint16 prediv, uint8 cntdiv){
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef SPI_BLOCK
+
+// Send (sr & SPI_SEND), Read (sr & SPI_RECEIVE): 8 bit command + data(max 64 bytes)
+// HSPI, if SPI_SEND + SPI_RECEIVE = full-duplex (addr ignored)
+void ICACHE_FLASH_ATTR spi_write_read_block(uint8 sr, uint8 addr, uint8 * data, uint8 data_size)
+{
+	uint8 spi_no = HSPI;
+	while(spi_busy(spi_no)); //wait for SPI to be ready
+
+	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI|SPI_USR_MISO|SPI_USR_COMMAND|SPI_USR_ADDR|SPI_USR_DUMMY|SPI_WR_BYTE_ORDER|SPI_RD_BYTE_ORDER);
+
+	//########## Setup Bit-lengths ##########//
+	uint32 d = ((8-1)&SPI_USR_ADDR_BITLEN)<<SPI_USR_ADDR_BITLEN_S; // Number of bits in Address
+	if(sr & SPI_SEND) { // send
+		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI | (sr & SPI_RECEIVE ? SPI_DOUTDIN : 0)); // +receive full-duplex if set
+		d |= ((data_size*8-1)&SPI_USR_MOSI_BITLEN)<<SPI_USR_MOSI_BITLEN_S; // Number of bits to Send
+		copy_s1d4((void *)SPI_W0(spi_no), data, data_size);
+	} else {
+		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MISO);
+		d |= ((data_size*8-1)&SPI_USR_MISO_BITLEN)<<SPI_USR_MISO_BITLEN_S; // Number of bits to receive
+	}
+	WRITE_PERI_REG(SPI_USER1(spi_no), d);
+
+	if(sr != SPI_SEND + SPI_RECEIVE) {
+		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_ADDR); //enable ADDRess function in SPI module
+		WRITE_PERI_REG(SPI_ADDR(spi_no), addr<<(32-8)); //align address data to high bits
+	}
+
+	//########## Begin SPI Transaction ##########//
+	SET_PERI_REG_MASK(SPI_CMD(spi_no), SPI_USR);
+
+	while(spi_busy(spi_no));	//wait for SPI transaction to complete
+
+	if(sr & SPI_RECEIVE) { // receive
+		copy_s4d1(data, (void *)SPI_W0(spi_no), data_size);
+		#if DEBUGSOO > 4
+			os_printf("SPI_R: ");
+			print_hex_dump(data, data_size, ' ');
+			os_printf("\n");
+		#endif
+	}
+
+}
+#endif
 
 #ifdef SPI_TINY
 
@@ -184,6 +234,21 @@ uint8 ICACHE_FLASH_ATTR spi_write_read_byte(uint8 dout_data)
 	//if(spi_no > 1) return 0;  //Check for a valid SPI
 
 	while(spi_busy(spi_no)); //wait for SPI to be ready
+
+#ifdef SPI_BLOCK
+	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI|SPI_USR_MISO|SPI_USR_COMMAND|SPI_USR_ADDR|SPI_USR_DUMMY|SPI_WR_BYTE_ORDER|SPI_RD_BYTE_ORDER);
+
+	//########## Setup Bitlengths ##########//
+	WRITE_PERI_REG(SPI_USER1(spi_no), ((0-1)&SPI_USR_ADDR_BITLEN)<<SPI_USR_ADDR_BITLEN_S | //Number of bits in Address
+									  ((8-1)&SPI_USR_MOSI_BITLEN)<<SPI_USR_MOSI_BITLEN_S | //Number of bits to Send = 8
+									  ((0-1)&SPI_USR_MISO_BITLEN)<<SPI_USR_MISO_BITLEN_S |  //Number of bits to receive
+									  ((0-1)&SPI_USR_DUMMY_CYCLELEN)<<SPI_USR_DUMMY_CYCLELEN_S); //Number of Dummy bits to insert
+	//########## END SECTION ##########//
+
+	//########## Setup DOUT data ##########//
+	//enable MOSI function in SPI module, full-duplex mode
+	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI | SPI_DOUTDIN);
+#endif
 
 	//copy data to W0
 	WRITE_PERI_REG(SPI_W0(spi_no), dout_data); // 8 bits out
@@ -205,7 +270,9 @@ uint8 ICACHE_FLASH_ATTR spi_write_read_byte(uint8 dout_data)
 #endif
 }
 
-#else
+#endif
+#ifndef SPI_TINY
+#ifndef SPI_BLOCK
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -322,7 +389,7 @@ uint32 spi_transaction(uint8 spi_no, uint8 cmd_bits, uint16 cmd_data, uint32 add
 		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_COMMAND); //enable COMMAND function in SPI module
 		uint16 command = cmd_data << (16-cmd_bits); //align command data to high bits
 		command = ((command>>8)&0xff) | ((command<<8)&0xff00); //swap byte order
-		WRITE_PERI_REG(SPI_USER2(spi_no), ((((cmd_bits-1)&SPI_USR_COMMAND_BITLEN)<<SPI_USR_COMMAND_BITLEN_S) | command&SPI_USR_COMMAND_VALUE));	
+		WRITE_PERI_REG(SPI_USER2(spi_no), ((((cmd_bits-1)&SPI_USR_COMMAND_BITLEN)<<SPI_USR_COMMAND_BITLEN_S) | (command&SPI_USR_COMMAND_VALUE)));
 	}
 //########## END SECTION ##########//
 
@@ -351,7 +418,7 @@ uint32 spi_transaction(uint8 spi_no, uint8 cmd_bits, uint16 cmd_data, uint32 add
 			//for example, 0xDA4 12 bits without SPI_WR_BYTE_ORDER would usually be output as if it were 0x0DA4, 
 			//of which 0xA4, and then 0x0 would be shifted out (first 8 bits of low byte, then 4 MSB bits of high byte - ie reverse byte order). 
 			//The code below shifts it out as 0xA4 followed by 0xD as you might require. 
-			WRITE_PERI_REG(SPI_W0(spi_no), ((0xFFFFFFFF<<(dout_bits - dout_extra_bits)&dout_data)<<(8-dout_extra_bits) | (0xFFFFFFFF>>(32-(dout_bits - dout_extra_bits)))&dout_data));
+			WRITE_PERI_REG(SPI_W0(spi_no), ((0xFFFFFFFF<<(dout_bits - dout_extra_bits)&dout_data)<<(8-dout_extra_bits) | ((0xFFFFFFFF>>(32-(dout_bits - dout_extra_bits)))&dout_data)));
 		} else {
 			WRITE_PERI_REG(SPI_W0(spi_no), dout_data);
 		}
@@ -383,4 +450,5 @@ uint32 spi_transaction(uint8 spi_no, uint8 cmd_bits, uint16 cmd_data, uint32 add
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#endif
 #endif
