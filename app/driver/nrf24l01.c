@@ -195,11 +195,9 @@ void ICACHE_FLASH_ATTR NRF24_init(void)
 	NRF24_SET_CSN_HI;
 #endif
 	ets_intr_unlock();
-	NRF24_WriteArray(NRF24_CMD_NOP, NRF24_INIT_DATA, sizeof(NRF24_INIT_DATA));
-
-//	uint16_t i = 0, d;
-//	do {
-//		d = ((uint16 *)NRF24_INIT_DATA)[i++]; // array must be aligned(2)
-//		NRF24_WriteByte(d & 0xFF, d / 256);
-//	} while(i < sizeof(NRF24_INIT_DATA) / 2);
+	uint16_t i = 0, d;
+	do {
+		d = ((uint16 *)NRF24_INIT_DATA)[i++]; // array must be aligned(2)
+		NRF24_WriteByte(d & 0xFF, d / 256);
+	} while(i < sizeof(NRF24_INIT_DATA) / 2);
 }

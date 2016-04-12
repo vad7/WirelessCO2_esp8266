@@ -150,7 +150,7 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		// defaults
 		os_memset(&cfg_co2, 0, sizeof(cfg_co2));
 		cfg_co2.csv_delimiter = ',';
-		cfg_co2.sensor_rf_channel = 120;
+		cfg_co2.sensor_rf_channel = 2;
 		cfg_co2.address_LSB = 0xC1;
 		cfg_co2.fans = 0;
 		cfg_co2.fan_speed_threshold[0] = 500;
