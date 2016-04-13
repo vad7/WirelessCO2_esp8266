@@ -1,8 +1,8 @@
 /*
  * nRF24L01.c
  *
- * Created: 01.11.2013 15:09:29
- *  Author: Vadim Kulakov, vad7 @ yahoo.com
+ * Created: 01.11.2013 15:09:29, updated for esp8266: 04.2016
+ * Written by Vadim Kulakov, vad7 @ yahoo.com
  */ 
 #include "hw/esp8266.h"
 

@@ -1,15 +1,16 @@
 /*
  * nRF24L01.c
  *
- * Created: 01.11.2013 15:09:29
- *  Author: Vadim Kulakov, vad7 @ yahoo.com
+ * Created: 01.11.2013 15:09:29, updated for esp8266: 04.2016
+ * Written by Vadim Kulakov, vad7 @ yahoo.com
+ *
  */
-#include "sdk/add_func.h"
+#include "osapi.h"
 #include "driver/spi.h"
 #include "driver/nrf24l01.h"
 
 #define NRF24_CE_GPIO			5
-//#define NRF24_CSN_GPIO			15 // if ommited - hardware CS
+//#define NRF24_CSN_GPIO			15 // if omitted - hardware CS
 #define NRF24_SET_CE_HI			GPIO_OUT_W1TS = (1<<NRF24_CE_GPIO)  // Start transmit
 #define NRF24_SET_CE_LOW		GPIO_OUT_W1TC = (1<<NRF24_CE_GPIO)
 #ifdef NRF24_CSN_GPIO
@@ -159,7 +160,7 @@ void ICACHE_FLASH_ATTR NRF24_Transmit(uint8_t *payload)
 	NRF24_transmit_status = NRF24_Transmitting;
 	NRF24_transmit_cnt = 30; // ms
 	os_timer_setfn(&NRF24_timer, (os_timer_func_t *)NRF24_timer_handler, NULL);
-	ets_timer_arm_new(&NRF24_timer, 1, 1, 1); // 1 ms, repeat
+	ets_timer_arm(&NRF24_timer, 1, 1); // 1 ms, repeat
 }
 
 // Set addresses: NRF24_BASE_ADDR + addr_LSB, return 1 if success
@@ -183,7 +184,7 @@ void ICACHE_FLASH_ATTR NRF24_Powerdown(void)
 void ICACHE_FLASH_ATTR NRF24_init(void)
 {
 	ets_intr_lock();
-	spi_init(HSPI);
+	spi_init();
 	SET_PIN_FUNC(NRF24_CE_GPIO, (MUX_FUN_IO_PORT(NRF24_CE_GPIO) )); // установить функцию GPIOx в режим порта i/o
 	SET_PIN_PULLUP_DIS(NRF24_CE_GPIO);
 	GPIO_ENABLE_W1TS = (1<<NRF24_CE_GPIO); // Configure GPIO port to output
@@ -195,9 +196,9 @@ void ICACHE_FLASH_ATTR NRF24_init(void)
 	NRF24_SET_CSN_HI;
 #endif
 	ets_intr_unlock();
-	uint16_t i = 0, d;
-	do {
-		d = ((uint16 *)NRF24_INIT_DATA)[i++]; // array must be aligned(2)
+	uint16_t i;
+	for(i = 0; i < sizeof(NRF24_INIT_DATA) / 2; i++) {
+		uint16_t d = ((uint16 *)NRF24_INIT_DATA)[i]; // array must be: aligned(2)
 		NRF24_WriteByte(d & 0xFF, d / 256);
-	} while(i < sizeof(NRF24_INIT_DATA) / 2);
+	}
 }
