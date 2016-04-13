@@ -13,25 +13,26 @@
 			<table class="form">
 				<tr>
 					<td class="label">Fans speed override</td>
-					<td><input title='-6..0..+6' name='cfg_co2_fans_speed_override' maxlength='4' value='~cfg_co2_fans_speed_override~'></td>
+					<td><input title='-6..0..+6' name='cfg_vars_fans_speed_ov' maxlength='4' value='~cfg_vars_fans_speed_ov~'></td>
 				</tr>
 				<tr>
 					<td class="label">Sensor RF channel:</td>
-					<td><input title='0..126' name='cfg_co2_rf_channel' maxlength='4' value='~cfg_co2_rf_channel~'></td>
+					<td><input title='0..126' name='cfg_co2_rf_ch' maxlength='4' value='~cfg_co2_rf_ch~'></td>
 				</tr>
 				<tr>
 					<td class="label">Receive address:</td>
-					<td><input title='0x00..0xFF' name='cfg_co2_address_LSB' maxlength='4' value='~cfg_co2_address_LSB~'></td>
+					<td><input title='0x00..0xFF' name='cfg_co2_addr_LSB' maxlength='4' value='~cfg_co2_addr_LSB~'></td>
 				</tr>
 				<tr>
 					<td class="label">Fans:</td>
 					<td><input title='1..10' name='cfg_co2_fans' maxlength='4' value='~cfg_co2_fans~'></td>
 				</tr>
-				<tr><a href="setfans.htm">Configure Fans...</a>
+				<tr>
+					<td></td><td><a href="setfans.htm">Configure Fans...</a></td>
 				</tr>
 				<tr>
 					<td class="label">Fan speed thresholds:</td>
-					<td><input title='n,n,n,n,n,n' name='cfg_co2_fan_speed_threshold' maxlength='50' value='~cfg_co2_fan_speed_threshold~'></td>
+					<td><input title='n,n,n,n,n,n' name='cfg_co2_fans_speed_th' size='40' maxlength='50' value='~cfg_co2_fans_speed_th~'></td>
 				</tr>
 				<tr>
 					<td class="label">Night start:</td>
@@ -50,6 +51,10 @@
 					<td><input title='hhmm' name='cfg_co2_night_end_wd' maxlength='4' value='~cfg_co2_night_end_wd~'></td>
 				</tr>
 				<tr>
+					<td class="label">Maximum fan speed at night:</td>
+					<td><input title='0..6' name='cfg_co2_night_max' maxlength='4' value='~cfg_co2_night_max~'></td>
+				</tr>
+				<tr>
 					<td class="label">Delimiter in .csv:</td>
 					<td><input title='char' name='cfg_co2_csv_delim' maxlength='1' value='~cfg_co2_csv_delim~'></td>
 				</tr>
@@ -65,6 +70,7 @@
  			</table>
 		<p class="center">
 			<input type='hidden' name='cfg_co2_save' value='1'>
+			<input type='hidden' name='cfg_vars_save' value='1'>
 			<input type='submit' value='Set Config' class="button">
 		</p>
  		</form>

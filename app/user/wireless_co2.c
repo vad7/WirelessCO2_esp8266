@@ -55,7 +55,7 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 		}
 	}
 	fan_speed_previous = fanspeed;
-	if((fanspeed += cfg_co2.fans_speed_override) > FAN_SPEED_MAX) fanspeed = FAN_SPEED_MAX;
+	if((fanspeed += global_vars.fans_speed_override) > FAN_SPEED_MAX) fanspeed = FAN_SPEED_MAX;
 	if(fanspeed < 0) fanspeed = 0;
 	struct tm tm;
 	time_t t = get_sntp_localtime();
@@ -71,6 +71,7 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 	st = (st / 100) * 60 + st % 100;
 	end = (end / 100) * 60 + end % 100;
 	now_night = ((end > st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)));
+	if(now_night && fanspeed > cfg_co2.fans_speed_night_max) fanspeed = cfg_co2.fans_speed_night_max;
 	uint8 fan;
 	for(fan = 0; fan < cfg_co2.fans; fan++) {
 		CFG_FAN *f = &cfg_fans[fan];
@@ -151,7 +152,7 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		os_memset(&cfg_co2, 0, sizeof(cfg_co2));
 		cfg_co2.csv_delimiter = ',';
 		cfg_co2.sensor_rf_channel = 2;
-		cfg_co2.address_LSB = 0xC1;
+		cfg_co2.address_LSB = 0xC0;
 		cfg_co2.fans = 0;
 		cfg_co2.fan_speed_threshold[0] = 500;
 		cfg_co2.fan_speed_threshold[1] = 550;
@@ -159,6 +160,12 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		cfg_co2.fan_speed_threshold[3] = 800;
 		cfg_co2.fan_speed_threshold[4] = 900;
 		cfg_co2.fan_speed_threshold[5] = 1100;
+	}
+	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) != sizeof(cfg_fans)) {
+		os_memset(&cfg_fans, 0, sizeof(cfg_fans));
+	}
+	if(flash_read_cfg(&global_vars, ID_CFG_VARS, sizeof(global_vars)) != sizeof(global_vars)) {
+		os_memset(&global_vars, 0, sizeof(global_vars));
 	}
 	fan_speed_previous = 0;
 	ets_timer_disarm(&user_loop_timer);
@@ -173,4 +180,8 @@ bool ICACHE_FLASH_ATTR write_wireless_co2_cfg(void) {
 
 bool ICACHE_FLASH_ATTR write_wireless_fans_cfg(void) {
 	return flash_save_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans));
+}
+
+bool ICACHE_FLASH_ATTR write_global_vars_cfg(void) {
+	return flash_save_cfg(&global_vars, ID_CFG_VARS, sizeof(global_vars));
 }

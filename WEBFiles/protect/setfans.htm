@@ -18,11 +18,11 @@
 				</tr>
 				<tr>
 					<td class="label">Fan RF channel:</td>
-					<td><input title='0..126' name='cfg_fan_rf_channel' maxlength='4' value='~cfg_fan_rf_channel~'></td>
+					<td><input title='0..126' name='cfg_fan_rf_ch' maxlength='4' value='~cfg_fan_rf_ch~'></td>
 				</tr>
 				<tr>
 					<td class="label">Receive address:</td>
-					<td><input title='0x00..0xFF' name='cfg_fan_address_LSB' maxlength='4' value='~cfg_fan_address_LSB~'></td>
+					<td><input title='0x00..0xFF' name='cfg_fan_addr_LSB' maxlength='4' value='~cfg_fan_addr_LSB~'></td>
 				</tr>
 				<tr>
 					<td class="label">Speed Min:</td>
@@ -59,13 +59,15 @@
  		</form>
 	</div>
 ~inc:footer.inc~
-<script src="cookies.js"></script>
+<script src="cookie.js"></script>
 <script type="text/javascript">
 var f = document.getElementById("cfg_fan_");
-for(var i=1; i <= ~cfg_co2_fans~; i++) {
+var sel = getCookie("cfg_fan_");
+for(var i=0; i < ~cfg_co2_fans~; i++) {
 	var o = document.createElement("option");
-	o.text = i;
+	o.text = i+1;
 	o.value = i;
+	if(o.value == sel) o.selected = true;
 	f.add(o);
 }
 setFormCheckBoxes(document.forms[0]);
@@ -88,8 +90,8 @@ if (val == null) {
 	SetCookie("cfg_fan_", "0");
 }
 function ShowNewFan() {
-	SetCookie("cfg_fan_", document.getElementById("cfg_fan_").value);
-	location.reload();
+	setCookie("cfg_fan_", document.getElementById("cfg_fan_").value);
+	location.assign(location.pathname);
 }
 </script>
 </body></html>

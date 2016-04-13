@@ -8,7 +8,7 @@
 
 typedef struct __attribute__((packed)) {
 	uint16	fan_speed_threshold[FAN_SPEED_MAX]; //  Fan speed: CO2 < 500 ppm = 0; < 550 ppm = 1; < 600 ppm = 2; < 800 ppm = 3; < 900 ppm = 4; < 1100 ppm = 5; > = 6 (max)
-	uint16	fan_speed_delta;		// delta for lowering speed
+	uint16	fan_speed_delta;		// delta CO2 for lowering speed, ppm
 	uint16	night_start;			// hh,mm
 	uint16	night_end;				// hh,mm
 	uint16	night_start_wd;			// hh,mm at weekend
@@ -18,7 +18,7 @@ typedef struct __attribute__((packed)) {
 	uint8	address_LSB;			// Address LSB for receiving
 	uint8	iot_cloud_enable;		// use "protect/iot_cloud.ini" to send data to IoT cloud
 	char	csv_delimiter; 			// ','
-	int8	fans_speed_override;	// +- total speed
+	uint8	fans_speed_night_max;	// speed max at night
 
 //	char sntp_server[20];
 } CFG_CO2;
@@ -45,6 +45,11 @@ typedef struct __attribute__ ((packed)) {
 } CO2_SEND_DATA;
 CO2_SEND_DATA __attribute__((aligned(4))) co2_send_data;
 
+typedef struct __attribute__ ((packed)) {
+	int8	fans_speed_override;	// +- total speed
+} GLOBAL_VARS;
+GLOBAL_VARS __attribute__((aligned(4))) global_vars;
+
 time_t CO2_last_time;
 int8_t fan_speed_previous;
 uint8  now_night;
@@ -58,6 +63,7 @@ void wireless_co2_init(uint8 index) ICACHE_FLASH_ATTR;
 void user_loop(void) ICACHE_FLASH_ATTR;
 bool write_wireless_co2_cfg(void) ICACHE_FLASH_ATTR;
 bool write_wireless_fans_cfg(void) ICACHE_FLASH_ATTR;
+bool write_global_vars_cfg(void) ICACHE_FLASH_ATTR;
 uint8_t iot_cloud_init(void) ICACHE_FLASH_ATTR;
 void iot_data_clear(void) ICACHE_FLASH_ATTR;
 void iot_cloud_send(uint8 fwork) ICACHE_FLASH_ATTR;

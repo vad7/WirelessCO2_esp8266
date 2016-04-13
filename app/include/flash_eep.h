@@ -31,6 +31,7 @@
 #define ID_CFG_METER 0x524D // id для настроек Power Meter
 #define ID_CFG_CO2   0x4F43 // id для настроек Wireless CO2
 #define ID_CFG_FANS  0x4E46 // id для настроек FANS
+#define ID_CFG_VARS  0x5356 // id для глобальных переменных
 
 //-----------------------------------------------------------------------------
 
