@@ -113,16 +113,35 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 			CO2_send_fan_idx = 0;
 			CO2_work_flag = 2;
 			CO2_send_flag = 0;
+
+			NRF24_Powerdown();
+
 		}
 	} else if(CO2_work_flag == 2) { // send
 xRepeat:
 		if(cfg_co2.fans == 0) goto xNextFAN; // skip
 		CFG_FAN *f = &cfg_fans[CO2_send_fan_idx];
 		if(CO2_send_flag == 0) { // start
+			cfg_co2.fans = 1;
+			NRF24_SetMode(NRF24_TransmitMode);
+			set_new_rf_channel(2);
+			if(NRF24_SetAddresses(0xC1)) {
+				co2_send_data.CO2level = 1221;
+				co2_send_data.FanSpeed = 5;
+
+				NRF24_Transmit((uint8 *)&co2_send_data);
+				CO2_send_flag = 1;
+			}
+			return;
+
+
+
+
+
 			if(f->flags & (1<<FAN_SKIP_BIT)) goto xNextFAN; // skip
+			NRF24_SetMode(NRF24_TransmitMode);
 			set_new_rf_channel(f->rf_channel);
 			if(NRF24_SetAddresses(f->address_LSB)) {
-				NRF24_SetMode(NRF24_TransmitMode);
 				co2_send_data.FanSpeed = f->speed_current;
 				NRF24_Transmit((uint8 *)&co2_send_data);
 				CO2_send_flag = 1;
@@ -191,9 +210,9 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		os_memset(&global_vars, 0, sizeof(global_vars));
 	}
 	fan_speed_previous = 0;
-	ets_timer_disarm(&user_loop_timer);
+	//ets_timer_disarm(&user_loop_timer);
 	os_timer_setfn(&user_loop_timer, (os_timer_func_t *)user_loop, NULL);
-	ets_timer_arm_new(&user_loop_timer, 1000, 1, 1); // 1s, repeat
+	ets_timer_arm_new(&user_loop_timer, 3000, 1, 1); // 1s, repeat
 	NRF24_init(); // After init transmit must be delayed
 }
 

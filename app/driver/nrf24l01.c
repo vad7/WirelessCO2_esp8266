@@ -5,7 +5,7 @@
  * Written by Vadim Kulakov, vad7 @ yahoo.com
  *
  */
-#include "osapi.h"
+#include "sdk/add_func.h"
 #include "driver/spi.h"
 #include "driver/nrf24l01.h"
 
@@ -44,6 +44,10 @@ uint8_t NRF24_BASE_ADDR[] = { 0xC8, 0xC8 }; // Address MSBs: 2..3
 os_timer_t 	NRF24_timer DATA_IRAM_ATTR;
 
 #ifdef SPI_BLOCK
+
+#if DEBUGSOO > 4
+uint32 system_get_time(void);
+#endif
 
 // Send command & receive status
 uint8_t ICACHE_FLASH_ATTR NRF24_SendCommand(uint8_t cmd)
@@ -145,6 +149,9 @@ void NRF24_timer_handler(void)
 		} else
 			NRF24_transmit_status = NRF24_Transmit_Timeout;
 		ets_timer_disarm(&NRF24_timer);
+		#if DEBUGSOO > 4
+			os_printf("TRE:%u,%u\n", NRF24_transmit_cnt, system_get_time());
+		#endif
 	}
 }
 
@@ -152,15 +159,22 @@ void NRF24_timer_handler(void)
 void ICACHE_FLASH_ATTR NRF24_Transmit(uint8_t *payload)
 {
 	NRF24_SET_CE_LOW;
+#if DEBUGSOO > 4
+	os_printf("TRS:%u\n", system_get_time());
+#endif
 	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
 	NRF24_SendCommand(NRF24_CMD_FLUSH_TX);
 	NRF24_WriteArray(NRF24_CMD_W_TX_PAYLOAD, payload, NRF24_PAYLOAD_LEN);
 	NRF24_SET_CE_HI; // Start transmission
 
+#if DEBUGSOO > 4
+	os_printf("TRS:%u\n", system_get_time());
+#endif
+
 	NRF24_transmit_status = NRF24_Transmitting;
-	NRF24_transmit_cnt = 30; // ms
+	NRF24_transmit_cnt = 100; // ms
 	os_timer_setfn(&NRF24_timer, (os_timer_func_t *)NRF24_timer_handler, NULL);
-	ets_timer_arm(&NRF24_timer, 1, 1); // 1 ms, repeat
+	ets_timer_arm_new(&NRF24_timer, 1, 1, 1); // 1 ms, repeat
 }
 
 // Set addresses: NRF24_BASE_ADDR + addr_LSB, return 1 if success
