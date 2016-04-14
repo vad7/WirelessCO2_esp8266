@@ -13,6 +13,7 @@ inc:timer.inc
 inc:footer.inc
 inc:timer.inc
 inc:footer.inc
+fans_xml
 inc:grfx1.inc
 inc:grfx2.inc
 sys_heap
@@ -24,7 +25,7 @@ inc:time.inc
 inc:menu0.inc
 CO2_current
 CO2_last_time
-Fans_Table_body
+cfg_vars_fans_speed_ov
 sntp_time
 SNTP_St
 sys_mactime
@@ -32,6 +33,8 @@ inc:footer.inc
 inc:vdd.inc
 inc:time.inc
 cfg_co2_fans
+cfg_co2_fans
+now_night_override
 gpio1_inp
 gpio1_out
 gpio1_dir
@@ -212,11 +215,13 @@ inc:footer.inc
 wifi_st_aucn
 wifi_scan
 inc:menu0.inc
+cfg_fan_name
 cfg_fan_rf_ch
 cfg_fan_addr_LSB
-cfg_fan_speed_min
-cfg_fan_speed_max
-cfg_fan_speed_night
+cfg_fan_min
+cfg_fan_max
+cfg_fan_day
+cfg_fan_night
 inc:footer.inc
 cfg_co2_fans
 inc:menu0.inc

@@ -13,8 +13,12 @@
 			<table class="form">
 				<tr>
 				<td class="label">Select fan:</td>
-				<td><select title="fan" id="cfg_fan_" onchange="ShowNewFan();">
+				<td><select title="fan" id="cfg_fan_" onchange="ShowNewFan()">
 				</select></td>
+				</tr>
+				<tr>
+					<td class="label">Name:</td>
+					<td><input name='cfg_fan_name' maxlength='16' value='~cfg_fan_name~'></td>
 				</tr>
 				<tr>
 					<td class="label">Fan RF channel:</td>
@@ -26,15 +30,27 @@
 				</tr>
 				<tr>
 					<td class="label">Speed Min:</td>
-					<td><input title='0..6' name='cfg_fan_speed_min' maxlength='4' value='~cfg_fan_speed_min~'></td>
+					<td><input title='0..6' name='cfg_fan_min' maxlength='4' value='~cfg_fan_min~'></td>
 				</tr>
 				<tr>
 					<td class="label">Speed Max:</td>
-					<td><input title='0..6' name='cfg_fan_speed_max' maxlength='4' value='~cfg_fan_speed_max~'></td>
+					<td><input title='0..6' name='cfg_fan_max' maxlength='4' value='~cfg_fan_max~'></td>
+				</tr>
+				<tr>
+					<td class="label">Override day:</td>
+					<td><select name='cfg_fan_override_day'>
+						<option value='0'>No</option>
+						<option value='1'>=Day speed</option>
+						<option value='2'>+Day speed</option>
+					</select></td>
+				</tr>
+				<tr>
+					<td class="label">Day speed / delta:</td>
+					<td><input title='0..6' name='cfg_fan_day' maxlength='4' value='~cfg_fan_day~'></td>
 				</tr>
 				<tr>
 					<td class="label">Override at night:</td>
-					<td><select name='cfg_fan_override_at_night'>
+					<td><select name='cfg_fan_override_night'>
 						<option value='0'>No</option>
 						<option value='1'>=Night speed</option>
 						<option value='2'>+Night speed</option>
@@ -42,7 +58,7 @@
 				</tr>
 				<tr>
 					<td class="label">Night speed / delta:</td>
-					<td><input title='0..6' name='cfg_fan_speed_night' maxlength='4' value='~cfg_fan_speed_night~'></td>
+					<td><input title='0..6' name='cfg_fan_night' maxlength='4' value='~cfg_fan_night~'></td>
 				</tr>
 				<tr>
 					<td class="label">Flags:</td>

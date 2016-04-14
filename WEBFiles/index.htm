@@ -1,21 +1,25 @@
 <!DOCTYPE html>
 <html><head>
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
-	<title>CO2 Meter</title>
-	<link rel="stylesheet" href="/style.css">
-</head><body>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+<title>CO2 Meter</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/site.js"></script>
+</head><body onload="CreateTable()">
 ~inc:menu0.inc~
 <div class="content">
 <h2 class="title">CO2: ~CO2_current~ ppm</h2>
 <p class="center">
 <span id="time__~CO2_last_time~_1">?</span>
 </p>
-<br><br><br>
+<p id="now_night" align="right"></p>
 <table id="fans" class="mdbtab">
-	<tr><th>Fan</th><th>Speed</th><th>Last send</th></tr>
-	~Fans_Table_body~
+	<tr><th>№</th><th>Name</th><th>Speed</th><th>Last send</th><th colspan="3">Set</th></tr>
 </table>
-<br><br><br>
+Override: Speed: <input title="-6..6" id="cfg_vars_fans_speed_ov" maxlength="2" size="3" value="~cfg_vars_fans_speed_ov~">
+ Night: <input type="checkbox" id="now_night_ov">
+<button type="button" onclick="SetOnChange()">set</button>
+<br>
+<br>
 Time: <span id="time__~sntp_time~_2">No SNTP</span> (~SNTP_St~)<br>
 Start time: <span id="timer_~sys_mactime~_3">?</span><br>
 Power: <span title="Vdd" id="syspower">?</span> V<br>
@@ -24,6 +28,40 @@ Power: <span title="Vdd" id="syspower">?</span> V<br>
 ~inc:vdd.inc~
 ~inc:time.inc~
 <script type="text/javascript">
-	if(~cfg_co2_fans~ == 0) document.all.fans.hidden = true;
+function SetOnChange() {
+	newAJAXCommand('?now_night='+(document.getElementById('now_night_ov').checked ? '1':'0') + '&cfg_vars_fans_speed_ov='+document.getElementById('cfg_vars_fans_speed_ov').value);
+}
+function CreateTable() {
+	for(var i = 0; i < ~cfg_co2_fans~; i++){
+		r=document.all.fans.insertRow(-1);
+		(r.insertCell(0)).innerHTML = i+1;
+		r.insertCell(1);
+		r.insertCell(2);
+		r.insertCell(3);
+		c=r.insertCell(4);c.innerHTML="+";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=p")};c.className='s';
+		c=r.insertCell(5);c.innerHTML="-";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=m")};c.className='s';
+		c=r.insertCell(6);c.innerHTML="*";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=c")};c.className='s';
+	}
+	newAJAXCommand('fans.xml', updateStatus, true);
+}
+function updateStatus(xmlData) {
+	if(!xmlData) return;
+	var total = getXMLValue(xmlData, 'total');
+	document.getElementById('now_night').innerHTML = getXMLValue(xmlData, 'night') == '1' ? 'night  ' : '';
+	for(i = 0; i < total; i++){
+		var r = document.all.fans.rows[i+1];
+		var f = xmlData.getElementsByTagName('fan')[i];
+		r.cells[1].innerHTML = getXMLValue(f, 'name');
+		if(getXMLValue(f, 'fl') & 1) r.cells[1].style.color = 'gray';
+		r.cells[2].innerHTML = getXMLValue(f, 'spc');
+		r.cells[2].style.color = (getXMLValue(f, 'fl') & 2) ? 'red' : '';
+		var du = getXMLValue(f, 'ttm') * 1000; d = new Date(du);
+		r.cells[3].innerHTML = du == 0 ? '---' : d.toLocaleTimeString();
+		r.cells[3].style.color = (getXMLValue(f, 'tst') > 1) ? 'red' : '';
+	}
+	nextimeout = 1000;
+}
+if(~cfg_co2_fans~ == "0") document.all.fans.hidden = true;
+document.getElementById('now_night_ov').checked = ~now_night_override~ == '1' ? true : false;
 </script>
 </body></html>

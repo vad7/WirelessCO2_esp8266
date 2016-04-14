@@ -24,16 +24,25 @@ typedef struct __attribute__((packed)) {
 } CFG_CO2;
 CFG_CO2 __attribute__((aligned(4))) cfg_co2;
 
+typedef enum
+{
+	FAN_SKIP_BIT = 0,
+	FAN_SPEED_FORCED
+} CFG_FAN_FLAGS;
+
 typedef struct __attribute__((packed)) {
+	char name[16];
 	time_t transmit_ok_last_time;
-	uint8 transmit_last_status;
-	uint8 flags;			// b1: skip
+	uint8 transmit_last_status;	// NRF24_transmit_status
+	uint8 flags;				// CFG_FAN_FLAGS enum
 	uint8 rf_channel;
 	uint8 address_LSB;
-	int8 speed_min;
-	int8 speed_max;
-	int8 override_at_night;	// 0 - no, 1 - set =speed_night, 2 - set +speed_night
-	int8 speed_night;
+	int8  speed_min;
+	int8  speed_max;
+	uint8 override_day;			// 0 - no, 1 - set =speed_override, 2 - set +speed_override
+	int8  speed_day;			// day
+	uint8 override_night;		// 0 - no, 1 - set =speed_night, 2 - set +speed_night
+	int8  speed_night;
 	uint8 speed_current;
 } CFG_FAN;
 CFG_FAN __attribute__((aligned(4))) cfg_fans[FANS_MAX]; // Actual number of fans stored in cfg_co2.fans
@@ -46,19 +55,21 @@ typedef struct __attribute__ ((packed)) {
 CO2_SEND_DATA __attribute__((aligned(4))) co2_send_data;
 
 typedef struct __attribute__ ((packed)) {
-	int8	fans_speed_override;	// +- total speed
+	int8  fans_speed_override;	// +- total speed
 } GLOBAL_VARS;
 GLOBAL_VARS __attribute__((aligned(4))) global_vars;
 
 time_t CO2_last_time;
 int8_t fan_speed_previous;
 uint8  now_night;
+uint8  now_night_override; // 0 - use now_night, 1 - not night, 2 - night
 // Cookies:
 uint32 Web_ChartMaxDays; 	// ~ChartMaxDays~
 uint32 Web_ShowByDay; 		// ~ShowByDay~
 uint32 Web_cfg_fan_;		// fan idx for change setting
 //
 
+void send_fans_speed_now(uint8 calc_speed) ICACHE_FLASH_ATTR;
 void wireless_co2_init(uint8 index) ICACHE_FLASH_ATTR;
 void user_loop(void) ICACHE_FLASH_ATTR;
 bool write_wireless_co2_cfg(void) ICACHE_FLASH_ATTR;

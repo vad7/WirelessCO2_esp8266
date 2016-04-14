@@ -71,17 +71,23 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 	st = (st / 100) * 60 + st % 100;
 	end = (end / 100) * 60 + end % 100;
 	now_night = ((end > st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)));
-	if(now_night && fanspeed > cfg_co2.fans_speed_night_max) fanspeed = cfg_co2.fans_speed_night_max;
+	uint8 night = now_night_override == 2 ? 1 : now_night_override == 1 ? 0 : now_night;
+	if(night && fanspeed > cfg_co2.fans_speed_night_max) fanspeed = cfg_co2.fans_speed_night_max;
 	uint8 fan;
 	for(fan = 0; fan < cfg_co2.fans; fan++) {
 		CFG_FAN *f = &cfg_fans[fan];
-		if(now_night) {
-			if(f->override_at_night == 1) fanspeed = f->speed_night; // =
-			else if(f->override_at_night == 2) fanspeed += f->speed_night; // +
+		if(f->flags & (1<<FAN_SPEED_FORCED)) continue;
+		int8_t fsp = fanspeed;
+		if(night) {
+			if(f->override_night == 1) fsp = f->speed_night; // =
+			else if(f->override_night == 2) fsp += f->speed_night; // +
+		} else {
+			if(f->override_day == 1) fsp = f->speed_day; // =
+			else if(f->override_day == 2) fsp += f->speed_day; // +
 		}
-		if(fanspeed < f->speed_min) fanspeed = f->speed_min;
-		if(fanspeed > f->speed_max) fanspeed = f->speed_max;
-		f->speed_current = fanspeed;
+		if(fsp < f->speed_min) fsp = f->speed_min;
+		if(fsp > f->speed_max) fsp = f->speed_max;
+		f->speed_current = fsp;
 	}
 }
 
@@ -109,10 +115,11 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 			CO2_send_flag = 0;
 		}
 	} else if(CO2_work_flag == 2) { // send
+xRepeat:
 		if(cfg_co2.fans == 0) goto xNextFAN; // skip
 		CFG_FAN *f = &cfg_fans[CO2_send_fan_idx];
 		if(CO2_send_flag == 0) { // start
-			if(f->flags & 1) goto xNextFAN; // skip
+			if(f->flags & (1<<FAN_SKIP_BIT)) goto xNextFAN; // skip
 			set_new_rf_channel(f->rf_channel);
 			if(NRF24_SetAddresses(f->address_LSB)) {
 				NRF24_SetMode(NRF24_TransmitMode);
@@ -136,6 +143,11 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 				if(NRF24_transmit_status == NRF24_Transmit_Ok) {
 					f->transmit_ok_last_time = get_sntp_localtime();
 				}
+				if(CO2_send_flag == 2) { // need repeat
+					CO2_send_flag = 0;
+					CO2_send_fan_idx = 0;
+					goto xRepeat;
+				}
 xNextFAN:
 				if(++CO2_send_fan_idx >= cfg_co2.fans) CO2_work_flag = 0;
 				CO2_send_flag = 0;
@@ -144,6 +156,17 @@ xNextFAN:
 	}
 }
 
+void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 calc_speed)
+{
+	if(calc_speed) CO2_set_fans_speed_current();
+	if(CO2_work_flag == 2 && CO2_send_flag == 1) {
+		CO2_send_flag = 2; // if now sending - repeat
+	} else {
+		CO2_work_flag = 2;
+		CO2_send_flag = 0;
+		CO2_send_fan_idx = 0;
+	}
+}
 
 void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 {

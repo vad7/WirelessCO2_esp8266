@@ -356,7 +356,8 @@ int ICACHE_FLASH_ATTR urldecode(uint8 *d, uint8 *s, uint16 lend, uint16 lens)
 	return ret;
 }*/
 /******************************************************************************
- * FunctionName : htmlcode
+ * FunctionName : htmlcode - coding chars: '"&<>
+ * Return: length
 *******************************************************************************/
 int ICACHE_FLASH_ATTR htmlcode(uint8 *d, uint8 *s, uint16 lend, uint16 lens)
 {

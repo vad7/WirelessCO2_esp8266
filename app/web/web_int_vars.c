@@ -333,7 +333,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 			system_set_os_print(val);
 			update_mux_txd1();
 		}
-		else ifcmp("co2_	") {
+		else ifcmp("co2_") { // cfg_
 			cstr += 4;
 			ifcmp("csv_delim") cfg_co2.csv_delimiter = pvar[0];
 			else ifcmp("rf_ch") cfg_co2.sensor_rf_channel = val;
@@ -368,26 +368,46 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 				}
 			}
 		}
-		else ifcmp("fan_") {
+		else ifcmp("fan_") { // cfg_
 			cstr += 4;
         	CFG_FAN *f = &cfg_fans[Web_cfg_fan_];
 	        ifcmp("rf_ch") f->rf_channel = val;
+	        else ifcmp("name") os_memcpy(f->name, pvar, os_strlen(pvar) + 1);
 	        else ifcmp("addr_LSB") f->address_LSB = val;
-	        else ifcmp("speed_min") f->speed_min = val;
-	        else ifcmp("speed_max") f->speed_max = val;
-	        else ifcmp("override_at_night") f->override_at_night = val;
-	        else ifcmp("speed_night") f->speed_night = val;
+	        else ifcmp("min") f->speed_min = val;
+	        else ifcmp("max") f->speed_max = val;
+	        else ifcmp("override") {
+	        	cstr += 8;
+		        ifcmp("_night") f->override_night = val;
+		        else ifcmp("_day") f->override_day = val;
+		        else {
+		        	if(pvar[0] == 'p') {
+		        		f->speed_current++;
+		        		f->flags |= (1<<FAN_SPEED_FORCED);
+		        	} else if(pvar[0] == 'm') {
+		        		f->speed_current--;
+		        		f->flags |= (1<<FAN_SPEED_FORCED);
+		        	} else {
+		        		f->flags &= ~(1<<FAN_SPEED_FORCED);
+		        	}
+		    		if(f->speed_current < f->speed_min) f->speed_current = f->speed_min;
+		    		if(f->speed_current > f->speed_max) f->speed_current = f->speed_max;
+		    		send_fans_speed_now(!(f->flags & (1<<FAN_SPEED_FORCED)));
+		        }
+	        }
+	        else ifcmp("day") f->speed_day = val;
+	        else ifcmp("night") f->speed_night = val;
 	        else ifcmp("flags") f->flags = val;
-	        else Web_cfg_fan_ = val; // "cfg_fan_"
+	        else Web_cfg_fan_ = val < cfg_co2.fans ? val : 0; // "cfg_fan_"
 		}
-		else ifcmp("vars_") {
+		else ifcmp("vars_") { // cfg_
 			cstr += 5;
         	ifcmp("fans_speed_ov") global_vars.fans_speed_override = val;
         	else ifcmp("save") {
 				if(val == 1) write_global_vars_cfg();
         	}
 		}
-        else ifcmp("iot_") {
+        else ifcmp("iot_") { // cfg_
         	cstr += 4;
 			ifcmp("cloud_enable") {
 				uint8 oldflag = cfg_co2.iot_cloud_enable;
@@ -409,7 +429,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 				}
 			}
         }
-		else ifcmp("save") {
+		else ifcmp("save") { // cfg_
 			if(val == 2) SetSCB(SCB_SYSSAVE); // по закрытию соединения вызвать sys_write_cfg()
 			else if(val == 1) sys_write_cfg();
 		}
@@ -441,6 +461,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 	}
 	else ifcmp("ChartMaxDays") Web_ChartMaxDays = val;
 	else ifcmp("ShowByDay") Web_ShowByDay = val;
+	else ifcmp("now_night") now_night_override = val;
 	else ifcmp("iot_") { // from iot_cloud.ini
 		cstr+=4;
 		uint16 len = os_strlen(pvar) + 1;

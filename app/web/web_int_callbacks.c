@@ -134,6 +134,33 @@ void ICACHE_FLASH_ATTR web_test_adc(TCP_SERV_CONN *ts_conn)
 }
 #endif // TEST_SEND_WAVE
 
+// Print fans array as xml, web_conn->udata_start = start fan n, web_conn->udata_stop = max fan n + 1
+void ICACHE_FLASH_ATTR web_fans_xml(TCP_SERV_CONN *ts_conn)
+{
+	WEB_SRV_CONN *web_conn = (WEB_SRV_CONN *) ts_conn->linkd;
+	if(CheckSCB(SCB_RETRYCB)==0) { // Check if this is a first round call
+    	tcp_puts_fd("<total>%d</total>", web_conn->udata_stop - web_conn->udata_start);
+    	tcp_puts_fd("<night>%d</night>", now_night);
+    	tcp_puts_fd("<night_ov>%d</night_ov>", now_night_override);
+    	tcp_puts_fd("<sp_ov>%d</sp_ov>", global_vars.fans_speed_override);
+	}
+	while(web_conn->msgbuflen + 250 <= web_conn->msgbufsize)
+	{ // +max string size
+		CFG_FAN *f = &cfg_fans[web_conn->udata_start];
+		tcp_puts_fd("<fan id=\"%d\"><name>", web_conn->udata_start);
+		web_conn->msgbuflen += htmlcode(&web_conn->msgbuf[web_conn->msgbuflen], f->name, sizeof(f->name) * 6, sizeof(f->name));
+		tcp_puts_fd("</name><fl>%u</fl><rf>%d</rf><addr>%d</addr><ovd>%d</ovd><ovn>%d</ovn><spmax>%d</spmax><spmin>%d</spmin><spd>%d</spd><spn>%d</spn><spc>%d</spc><tst>%d</tst><ttm>%u</ttm></fan>\n",
+			f->flags, f->rf_channel, f->address_LSB, f->override_day, f->override_night, f->speed_max, f->speed_min, f->speed_day, f->speed_night, f->speed_current, f->transmit_last_status, f->transmit_ok_last_time);
+		if(++web_conn->udata_start >= web_conn->udata_stop) {
+			ClrSCB(SCB_RETRYCB);
+			return;
+		}
+	}
+	// repeat in the next call ...
+	SetSCB(SCB_RETRYCB);
+	SetNextFunSCB(web_fans_xml);
+}
+
 // Send text file until zero byte found.
 // web_conn->udata_stop - WEBFS handle
 // web_conn->udata_start - start / current pos
@@ -773,11 +800,17 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 	        	cstr += 4;
 	        	CFG_FAN *f = &cfg_fans[Web_cfg_fan_];
 		        ifcmp("rf_ch") tcp_puts("%d", f->rf_channel);
+		        else ifcmp("name") tcp_puts("%s", f->name);
 		        else ifcmp("addr_LSB") tcp_puts("0x%X", f->address_LSB);
-		        else ifcmp("speed_min") tcp_puts("%d", f->speed_min);
-		        else ifcmp("speed_max") tcp_puts("%d", f->speed_max);
-		        else ifcmp("override_at_night") tcp_puts("%d", f->override_at_night);
-		        else ifcmp("speed_night") tcp_puts("%d", f->speed_night);
+		        else ifcmp("min") tcp_puts("%d", f->speed_min);
+		        else ifcmp("max") tcp_puts("%d", f->speed_max);
+		        else ifcmp("override") {
+		        	cstr += 8;
+			        ifcmp("_night") tcp_puts("%d", f->override_night);
+			        else ifcmp("_day") tcp_puts("%d", f->override_day);
+		        }
+		        else ifcmp("day") tcp_puts("%d", f->speed_day);
+		        else ifcmp("night") tcp_puts("%d", f->speed_night);
 		        else ifcmp("flags") tcp_puts("%d", f->flags);
 		    }
 			else ifcmp("vars_") {
@@ -1210,6 +1243,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         	ifcmp("current") tcp_puts("%u", co2_send_data.CO2level);
         	else ifcmp("last_time") tcp_puts("%u", sntp_local_to_UTC_time(CO2_last_time));
         }
+        else ifcmp("now_night_override") tcp_puts("%d", now_night_override);
         else ifcmp("now_night") tcp_puts("%d", now_night);
         else ifcmp("fan_speed_") {
         	cstr += 10;
@@ -1218,6 +1252,11 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         		uint8 idx = rom_atoi(cstr);
         		if(idx < cfg_co2.fans) tcp_puts("%d", cfg_fans[idx].speed_current);
         	}
+        }
+        else ifcmp("fans_xml") {
+	    	web_conn->udata_start = 0;
+	    	web_conn->udata_stop = cfg_co2.fans;
+	    	web_fans_xml(ts_conn);
         }
 //
 		else tcp_put('?');
