@@ -733,5 +733,11 @@ time_t ICACHE_FLASH_ATTR sntp_local_to_UTC_time(time_t local)
 	return local == 0 ? 0 : local - sntp->sntp_time_zone * 3600;
 }
 
+void ICACHE_FLASH_ATTR sntp_set_time(time_t t)
+{
+	if(sntp != NULL) sntp->sntp_time = t;
+}
+
+
 #endif /* LWIP_UDP */
 #endif // USE_SNTP

@@ -1210,6 +1210,7 @@ const char disk_err2_filename[] ICACHE_RODATA_ATTR = "/disk_er2.htm";
 const char disk_err3_filename[] ICACHE_RODATA_ATTR = "/disk_er3.htm";
 const char disk_err4_filename[] ICACHE_RODATA_ATTR = "/disk_er4.htm";
 const char sysconst_filename[] ICACHE_RODATA_ATTR = "sysconst";
+const char settings_filename[] ICACHE_RODATA_ATTR = "settings";
 #ifdef USE_OVERLAY
 const char overlay_filename[] ICACHE_RODATA_ATTR = "overlay";
 #endif
@@ -1367,6 +1368,12 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 						pupload->status = 2; // = 2 загрузка файла во flash
 						break;
 					}
+					else if(rom_xstrcmp(pupload->name, settings_filename)) { // cfg
+						pupload->fsize = FMEMORY_SCFG_BANK_SIZE * FMEMORY_SCFG_BANKS;
+						pupload->faddr = FMEMORY_SCFG_BASE_ADDR;
+						pupload->status = 2; // = 2 загрузка файла во flash
+						break;
+					}
 					// OTA firmware upload
 					else if(rom_xstrcmp(pupload->name, flash_filename)) {
 #if DEBUGSOO > 4
@@ -1493,7 +1500,7 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 #endif
 				if((ret == 1 || ret == 200)) { // найден конец или новый boundary?
 					if(pupload->status == 3 || pupload->status == 4) WEBFSInit();
-					if(pupload->fsize != 0) {
+					if(pupload->fsize != 0 && pupload->status != 2) { // кроме загрузки файла - он может быть меньше, чем fsize
 						if(!isWEBFSLocked) {
 							SetSCB(SCB_REDIR);
 							rom_xstrcpy(pupload->filename, disk_err1_filename); // os_memcpy(pupload->filename,"/disk_er1.htm\0",14); // не всё передано или неверный формат

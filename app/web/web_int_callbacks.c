@@ -161,6 +161,44 @@ void ICACHE_FLASH_ATTR web_fans_xml(TCP_SERV_CONN *ts_conn)
 	SetNextFunSCB(web_fans_xml);
 }
 
+// Output history from last record to previous,
+// yyyy-mm-dd hh:mm:ss,n
+void ICACHE_FLASH_ATTR web_get_history(TCP_SERV_CONN *ts_conn)
+{
+    WEB_SRV_CONN *web_conn = (WEB_SRV_CONN *)ts_conn->linkd;
+    if(CheckSCB(SCB_RETRYCB)==0) {// Check if this is a first round call
+    	if(history_co2_len == 0 || history_co2 == NULL || average_period == 0) return; // empty
+		web_conn->udata_start = 0; // cnt of records
+		web_conn->udata_stop = CO2_last_time;
+#if DEBUGSOO > 2
+		os_printf("Output History: ");
+#endif
+		tcp_puts("date,value\r\n"); // csv header
+    }
+    if(web_conn->udata_stop != CO2_last_time && history_co2_size == history_co2_len) { // mem moved while outputting
+    	if(web_conn->udata_start == 0) { // end
+    		ClrSCB(SCB_RETRYCB);
+    		return;
+    	}
+    	web_conn->udata_start--;
+    	web_conn->udata_stop = CO2_last_time;
+    }
+	while(web_conn->msgbuflen + 50 <= web_conn->msgbufsize) { // +max string size
+		struct tm tm;
+	    time_t time = web_conn->udata_stop - web_conn->udata_start * average_period;
+		_localtime(&time, &tm);
+		tcp_puts("%04d-%02d-%02d %02d:%02d:%02d%c%d\r\n",
+				1900+tm.tm_year, 1+tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,cfg_co2.csv_delimiter, history_co2[history_co2_len - 1 - web_conn->udata_start]);
+		if(++web_conn->udata_start >= history_co2_len) { // end
+			ClrSCB(SCB_RETRYCB);
+			return;
+		}
+	}
+	// repeat in the next call ...
+	SetSCB(SCB_RETRYCB);
+	SetNextFunSCB(web_get_history);
+}
+
 // Send text file until zero byte found.
 // web_conn->udata_stop - WEBFS handle
 // web_conn->udata_start - start / current pos
@@ -768,7 +806,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 #endif
 		    	else tcp_put('?');
 		    }
-		    else ifcmp("co2_") {
+		    else ifcmp("co2_") { // cfg_
 	        	cstr += 4;
 		        ifcmp("csv_delim") tcp_puts("%c", cfg_co2.csv_delimiter);
 		        else ifcmp("rf_ch") tcp_puts("%d", cfg_co2.sensor_rf_channel);
@@ -796,7 +834,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 		        	else ifcmp("max") tcp_puts("%d", cfg_co2.fans_speed_night_max);
 		        }
 		    }
-		    else ifcmp("fan_") {
+		    else ifcmp("fan_") { // cfg_
 	        	cstr += 4;
 	        	CFG_FAN *f = &cfg_fans[Web_cfg_fan_];
 		        ifcmp("rf_ch") tcp_puts("%d", f->rf_channel);
@@ -813,11 +851,12 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 		        else ifcmp("night") tcp_puts("%d", f->speed_night);
 		        else ifcmp("flags") tcp_puts("%d", f->flags);
 		    }
-			else ifcmp("vars_") {
+			else ifcmp("vars_") { // cfg_
 				cstr += 5;
 	        	ifcmp("fans_speed_ov") tcp_puts("%d", global_vars.fans_speed_override);
+	        	else ifcmp("receive_timeout") tcp_puts("%d", global_vars.receive_timeout);
 			}
-	        else ifcmp("iot_") {
+	        else ifcmp("iot_") { // cfg_
 	        	cstr += 4;
 	        	ifcmp("cloud_enable") tcp_puts("%d", cfg_co2.iot_cloud_enable);
 	            else ifcmp("ini") {
@@ -1046,6 +1085,11 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
             			web_conn->udata_stop = web_conn->udata_start + WEBFS_curent_size();
             			web_get_flash(ts_conn);
             		}
+            		else ifcmp("settings") {
+            	    	web_conn->udata_start = FMEMORY_SCFG_BASE_ADDR;
+            	    	web_conn->udata_stop = FMEMORY_SCFG_BASE_ADDR + current_cfg_length();
+            	    	web_get_flash(ts_conn);
+            		}
             		else tcp_put('?');
         		}
         		else web_get_flash(ts_conn);
@@ -1058,6 +1102,10 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         		web_get_ram(ts_conn);
         	}
 #endif
+        	// history.csv
+        	else ifcmp("history") {
+				web_get_history(ts_conn);
+        	}
         	//
         	else tcp_put('?');
         }
@@ -1223,6 +1271,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 		else ifcmp("sntp_") {
 			cstr += 5;
 			ifcmp("time") tcp_puts("%u", get_sntp_time());
+	        else ifcmp("status") tcp_puts("%s", sntp_status ? "Ok" : "?");
 			else tcp_put('?');
 		}
 #endif
@@ -1237,7 +1286,6 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
             ifcmp("LastSt_time") tcp_puts("%u", iot_last_status_time);
             else ifcmp("LastSt") tcp_puts("%s", iot_last_status);
         }
-        else ifcmp("SNTP_St") tcp_puts("%s", sntp_status ? "Ok" : "?");
         else ifcmp("CO2_") {
         	cstr += 4;
         	ifcmp("current") tcp_puts("%u", co2_send_data.CO2level);

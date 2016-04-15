@@ -80,36 +80,25 @@ void ICACHE_FLASH_ATTR copy_align4(void *ptrd, void *ptrs, uint32 len)
 /******************************************************************************
  * FunctionName : hextoul
 *******************************************************************************/
-// bool conv_str_hex(uint32 * dest, uint8 *s);
 uint32 ICACHE_FLASH_ATTR hextoul(uint8 *s)
 {
-/*
-	uint32 val;
-	if(!conv_str_hex(&val, s)) return 0;
-	return val;
-*/
 	uint32 val = 0;
-          while (*s)
-          {
-               if (*s >= '0' && *s <= '9')
-               {
-                 val <<= 4;
-                 val |= *s - '0';
-               }
-               else if (*s >= 'A' && *s <= 'F')
-               {
-                 val <<= 4;
-                 val |= *s - 'A' + 10;
-               }
-               else if (*s >= 'a' && *s <= 'f')
-               {
-                 val <<= 4;
-                 val |= *s - 'a' + 10;
-               }
-               else break;
-               s++;
-          };
-          return val;
+	while (*s)
+	{
+		uint8 c = *s;
+		if (c >= '0' && c <= '9') {
+			val <<= 4;
+			val |= c - '0';
+		} else {
+			c |= 0x20;
+			if (c >= 'a' && c <= 'f') {
+			 val <<= 4;
+			 val |= c - 'a' + 10;
+			} else break;
+		}
+		s++;
+	}
+	return val;
 }
 // bool convert_para_str(uint32 * dest, uint8 *s);
 /*

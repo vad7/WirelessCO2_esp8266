@@ -20,6 +20,7 @@ uint8 CO2_work_flag = 0; // 0 - not inited, 1 - wait incoming, 2 - send
 uint8 CO2_send_flag;		// 0 - ready to send, 1 - sending
 uint8 CO2_send_fan_idx;
 uint8 nrf_last_rf_channel = 255;
+uint16 receive_timeout;
 #define CO2LevelAverageArrayLength 6
 uint16_t CO2LevelAverageIdx = CO2LevelAverageArrayLength;
 uint16_t CO2LevelAverageArray[CO2LevelAverageArrayLength];
@@ -76,7 +77,7 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 	uint8 fan;
 	for(fan = 0; fan < cfg_co2.fans; fan++) {
 		CFG_FAN *f = &cfg_fans[fan];
-		if(f->flags & (1<<FAN_SPEED_FORCED)) continue;
+		if(f->flags & (1<<FAN_SPEED_FORCED_BIT)) continue;
 		int8_t fsp = fanspeed;
 		if(night) {
 			if(f->override_night == 1) fsp = f->speed_night; // =
@@ -103,41 +104,41 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 				os_printf("NRF-SetAddr error\n");
 			#endif
 		}
+		receive_timeout = global_vars.receive_timeout;
 	} else if(CO2_work_flag == 1) { // wait incoming
 		if(NRF24_Receive((uint8 *)&co2_send_data)) { // received
-			CO2_last_time = get_sntp_localtime();
+			time_t t = get_sntp_localtime();
+			if(CO2_last_time) {
+				uint16 d = t - CO2_last_time;
+				if(average_period == 0) average_period = d;
+				else average_period = (average_period + d) / 2;
+			}
+			if(history_co2 != NULL) { // store history co2
+				if(history_co2_size == history_co2_len) {
+					os_memmove(history_co2, history_co2 + 2, (history_co2_size - 1) * 2);
+					history_co2_len--;
+				}
+				history_co2[history_co2_len++] = co2_send_data.CO2level;
+			}
+			CO2_last_time = t;
 			#if DEBUGSOO > 4
 				os_printf("NRF Received at %u, CO2: %u, F: %d (%d)\n", CO2_last_time, co2_send_data.CO2level, co2_send_data.FanSpeed, co2_send_data.Flags);
 			#endif
 			CO2_set_fans_speed_current();
+xStartSending:
 			CO2_send_fan_idx = 0;
 			CO2_work_flag = 2;
 			CO2_send_flag = 0;
-
-			NRF24_Powerdown();
-
+			NRF24_Powerdown(); // need for SI24R01
+			iot_cloud_send(1);
+		} else if(receive_timeout) {
+			if(--receive_timeout == 0) goto xStartSending;
 		}
 	} else if(CO2_work_flag == 2) { // send
 xRepeat:
 		if(cfg_co2.fans == 0) goto xNextFAN; // skip
 		CFG_FAN *f = &cfg_fans[CO2_send_fan_idx];
 		if(CO2_send_flag == 0) { // start
-			cfg_co2.fans = 1;
-			NRF24_SetMode(NRF24_TransmitMode);
-			set_new_rf_channel(2);
-			if(NRF24_SetAddresses(0xC1)) {
-				co2_send_data.CO2level = 1221;
-				co2_send_data.FanSpeed = 5;
-
-				NRF24_Transmit((uint8 *)&co2_send_data);
-				CO2_send_flag = 1;
-			}
-			return;
-
-
-
-
-
 			if(f->flags & (1<<FAN_SKIP_BIT)) goto xNextFAN; // skip
 			NRF24_SetMode(NRF24_TransmitMode);
 			set_new_rf_channel(f->rf_channel);
@@ -214,6 +215,20 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 	os_timer_setfn(&user_loop_timer, (os_timer_func_t *)user_loop, NULL);
 	ets_timer_arm_new(&user_loop_timer, 3000, 1, 1); // 1s, repeat
 	NRF24_init(); // After init transmit must be delayed
+	iot_cloud_init();
+	if(history_co2 == NULL) history_co2 = os_malloc(HISTORY_CO2_BUFFER);
+	if(history_co2 != NULL) history_co2_size = HISTORY_CO2_BUFFER / 2;
+
+//	#if DEBUGSOO > 4
+//		os_printf("\n");
+//		for(; history_co2_len < 256; history_co2_len++) {
+//			history_co2[history_co2_len] = 300 + (os_random() & 0x7FF);
+//			os_printf("%d, ", history_co2[history_co2_len / 2]);
+//		}
+//		CO2_last_time = 1465995660;
+//		average_period = 10;
+//		os_printf("\n");
+//	#endif
 }
 
 bool ICACHE_FLASH_ATTR write_wireless_co2_cfg(void) {

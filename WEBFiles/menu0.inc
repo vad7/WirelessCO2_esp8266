@@ -1,13 +1,13 @@
-<h3 class="top">CO2 Meter</h3>
+<h3 class="top">Вентиляция</h3>
 <div class="menu">
 	<div>
-		<a href="/index.htm">Main</a>
-		<a href="/history.htm">History</a>
-		<a href="/peak.htm">Peak chart</a>
+		<a href="/index.htm">Главная</a>
+		<a href="/history.htm">История</a>
+		<a href="/peak.htm">График</a>
 	</div>
 	<div>
-		<a href="/protect/setmeter.htm">Setup meter</a>
-		<a href="/settings.htm">Settings</a>
+		<a href="/protect/setmeter.htm">Настройка</a>
+		<a href="/settings.htm">Дополнительно</a>
 	</div>
 </div>
 <script type="text/javascript">

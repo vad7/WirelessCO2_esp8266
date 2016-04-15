@@ -1,3 +1,3 @@
 <div class="footer">
-	WEB Connection: ~web_remote~<br>
+	WEB соединение: ~web_remote~<br>
 </div>

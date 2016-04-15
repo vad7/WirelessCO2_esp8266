@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head>
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-type" content="text/html; charset=windows-1251">
 	<title>CO2 Meter Setup</title>
 	<link rel="stylesheet" href="../style.css">
 	<script src="/scripts.js"></script>
@@ -8,12 +8,18 @@
 </head><body>
 ~inc:menu0.inc~
 	<div class="content">
-		<h2 class="title">CO2 Meter Setup</h2>
+		<h2 class="title">CO<sub>2</sub> Meter Setup</h2>
 		<form method="post" action="" onsubmit="SubmitFunction()">
 			<table class="form">
 				<tr>
-					<td class="label">Fans speed override</td>
+					<td class="label">Fans speed override:</td>
 					<td><input title='-6..0..+6' name='cfg_vars_fans_speed_ov' maxlength='4' value='~cfg_vars_fans_speed_ov~'></td>
+				</tr>
+				<tr>
+					<td class="label">Receive timeout, sec:</td>
+					<td><input title='0 - forever' name='cfg_vars_receive_timeout' maxlength='4' value='~cfg_vars_receive_timeout~'></td>
+				</tr>
+				<tr>
 				</tr>
 				<tr>
 					<td class="label">Sensor RF channel:</td>
@@ -74,6 +80,13 @@
 			<input type='submit' value='Set Config' class="button">
 		</p>
  		</form>
+		<br>
+		<p class="center">
+			<a href="settings.bin">Download settings...</a><br>
+			<form method='post' action='/fsupload' enctype='multipart/form-data' class="center">
+			Restore settings:
+			<input type='file' name='settings'> <input type='submit' value='Upload' class="button">
+		</p>
 	</div>
 ~inc:footer.inc~
 <script type="text/javascript">

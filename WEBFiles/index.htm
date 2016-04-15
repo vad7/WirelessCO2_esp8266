@@ -1,28 +1,28 @@
 <!DOCTYPE html>
 <html><head>
-<meta http-equiv="Content-type" content="text/html; charset=utf-8">
-<title>CO2 Meter</title>
+<meta http-equiv="Content-type" content="text/html; charset=windows-1251">
+<title>Вентиляция</title>
 <link rel="stylesheet" href="/style.css">
 <script src="/site.js"></script>
 </head><body onload="CreateTable()">
 ~inc:menu0.inc~
 <div class="content">
-<h2 class="title">CO2: ~CO2_current~ ppm</h2>
+<h2 class="title"><span style="font-weight:normal">CO<sub>2</sub>:</span>  ~CO2_current~ <span style="font-weight:normal">ppm</span></h2>
 <p class="center">
 <span id="time__~CO2_last_time~_1">?</span>
 </p>
 <p id="now_night" align="right"></p>
 <table id="fans" class="mdbtab">
-	<tr><th>в„–</th><th>Name</th><th>Speed</th><th>Last send</th><th colspan="3">Set</th></tr>
+	<tr><th>№</th><th>Место</th><th>Скорость</th><th>Отправлена</th><th colspan="3">Корректировка</th></tr>
 </table>
-Override: Speed: <input title="-6..6" id="cfg_vars_fans_speed_ov" maxlength="2" size="3" value="~cfg_vars_fans_speed_ov~">
- Night: <input type="checkbox" id="now_night_ov">
-<button type="button" onclick="SetOnChange()">set</button>
+Корректировать: Скорость: <input title="-6..6" id="cfg_vars_fans_speed_ov" maxlength="2" size="3" value="~cfg_vars_fans_speed_ov~">
+ Ночь: <input type="checkbox" id="now_night_ov">
+<button type="button" onclick="SetOnChange()">установить</button>
 <br>
 <br>
-Time: <span id="time__~sntp_time~_2">No SNTP</span> (~SNTP_St~)<br>
-Start time: <span id="timer_~sys_mactime~_3">?</span><br>
-Power: <span title="Vdd" id="syspower">?</span> V<br>
+Текущее время: <span id="time__~sntp_time~_2">NO SNTP</span> (~sntp_status~)<br>
+Время включения: <span id="timer_~sys_mactime~_3">?</span><br>
+Питание: <span title="Vdd" id="syspower">?</span> V<br>
 </div>
 ~inc:footer.inc~
 ~inc:vdd.inc~
@@ -47,7 +47,7 @@ function CreateTable() {
 function updateStatus(xmlData) {
 	if(!xmlData) return;
 	var total = getXMLValue(xmlData, 'total');
-	document.getElementById('now_night').innerHTML = getXMLValue(xmlData, 'night') == '1' ? 'night  ' : '';
+	document.getElementById('now_night').innerHTML = getXMLValue(xmlData, 'night') == '1' ? '* ночь * ' : '';
 	for(i = 0; i < total; i++){
 		var r = document.all.fans.rows[i+1];
 		var f = xmlData.getElementsByTagName('fan')[i];
@@ -56,7 +56,7 @@ function updateStatus(xmlData) {
 		r.cells[2].innerHTML = getXMLValue(f, 'spc');
 		r.cells[2].style.color = (getXMLValue(f, 'fl') & 2) ? 'red' : '';
 		var du = getXMLValue(f, 'ttm') * 1000; d = new Date(du);
-		r.cells[3].innerHTML = du == 0 ? '---' : d.toLocaleTimeString();
+		r.cells[3].innerHTML = du == 0 ? '---' : d.toTimeString().substr(0,8);
 		r.cells[3].style.color = (getXMLValue(f, 'tst') > 1) ? 'red' : '';
 	}
 	nextimeout = 1000;

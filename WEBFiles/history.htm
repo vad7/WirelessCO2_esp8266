@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html><head>
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
-	<title>History</title>
+	<meta http-equiv="Content-type" content="text/html; charset=windows-1251">
+	<title>История</title>
 	<link rel="stylesheet" href="/style.css">
 </head>
 <style>
@@ -64,13 +64,13 @@ var area = d3.svg.area()
 	.interpolate("linear")
 	.x(function(d) { return x(d.date); })
 	.y0(height)
-	.y1(function(d) { return y(d.power); });
+	.y1(function(d) { return y(d.value); });
 
 var area2 = d3.svg.area()
 	.interpolate("linear")
 	.x(function(d) { return x2(d.date); })
 	.y0(height2)
-	.y1(function(d) { return y2(d.power); });
+	.y1(function(d) { return y2(d.value); });
 
 var svg = d3.select("body").append("svg")
 	.attr("width", width + margin.left + margin.right)
@@ -92,7 +92,7 @@ var context = svg.append("g")
 
 d3.csv("history.csv", type, function(error, data) {
 	x.domain(d3.extent(data.map(function(d) { return d.date; })));
-	y.domain([0, d3.max(data.map(function(d) { return d.power; }))]);
+	y.domain([0, d3.max(data.map(function(d) { return d.value; }))]);
 	x2.domain(x.domain());
 	y2.domain(y.domain());
 
@@ -134,26 +134,13 @@ function brushed() {
 }
 function type(d) {
 	d.date = parseDate(d.date);
-	d.power = +d.power;
+	d.value = +d.value;
 	return d;
 }
 </script>
 <br><br><br>
-<form method="post" action="history.htm">
-Max days: <input type="text" id="ChartMaxDays" maxlength="10" title="0 - all">
- by day, kWt: <input type="checkbox" id="ShowByDay">
-<input type="submit" value="Refresh" onClick="updCookie('ChartMaxDays');updCookie('ShowByDay');" class="button">
-</form>
-<br>
-Last: <span id="time__~TotalCntTime~_1">?</span><br>
-<a href="history.csv">Download history.csv</a><br>
-<a href="/protect/fram_all.bin">Download all FRAM memory</a><br>
-</p></div>
+Последнее изменение: <span id="time__~CO2_last_time~_1">?</span><br>
+<a href="history.csv">Скачать history.csv</a><br>
 ~inc:footer.inc~
-<script src="cookies.js"></script>
-<script>
-setCookieElem("ShowByDay", 0);
-setCookieElem("ChartMaxDays", 10);
-</script>
 ~inc:time.inc~
 </body></html>

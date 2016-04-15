@@ -27,7 +27,7 @@ CFG_CO2 __attribute__((aligned(4))) cfg_co2;
 typedef enum
 {
 	FAN_SKIP_BIT = 0,
-	FAN_SPEED_FORCED
+	FAN_SPEED_FORCED_BIT
 } CFG_FAN_FLAGS;
 
 typedef struct __attribute__((packed)) {
@@ -55,9 +55,16 @@ typedef struct __attribute__ ((packed)) {
 CO2_SEND_DATA __attribute__((aligned(4))) co2_send_data;
 
 typedef struct __attribute__ ((packed)) {
-	int8  fans_speed_override;	// +- total speed
+	uint16 receive_timeout;		// timeout before start transmit, counts of user_loop calls (sec), 0 - forever
+	int8   fans_speed_override;	// +- total speed
 } GLOBAL_VARS;
 GLOBAL_VARS __attribute__((aligned(4))) global_vars;
+
+#define HISTORY_CO2_BUFFER	3072
+int16_t *history_co2;		// history buffer in the RAM
+uint16	history_co2_size;	// allocated size (by 2 byte)
+uint16	history_co2_len;	// current length (by 2 byte)
+uint16  average_period; 	// between receiving (sec), for charts
 
 time_t CO2_last_time;
 int8_t fan_speed_previous;

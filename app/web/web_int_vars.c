@@ -383,16 +383,16 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 		        else {
 		        	if(pvar[0] == 'p') {
 		        		f->speed_current++;
-		        		f->flags |= (1<<FAN_SPEED_FORCED);
+		        		f->flags |= (1<<FAN_SPEED_FORCED_BIT);
 		        	} else if(pvar[0] == 'm') {
 		        		f->speed_current--;
-		        		f->flags |= (1<<FAN_SPEED_FORCED);
+		        		f->flags |= (1<<FAN_SPEED_FORCED_BIT);
 		        	} else {
-		        		f->flags &= ~(1<<FAN_SPEED_FORCED);
+		        		f->flags &= ~(1<<FAN_SPEED_FORCED_BIT);
 		        	}
 		    		if(f->speed_current < f->speed_min) f->speed_current = f->speed_min;
 		    		if(f->speed_current > f->speed_max) f->speed_current = f->speed_max;
-		    		send_fans_speed_now(!(f->flags & (1<<FAN_SPEED_FORCED)));
+		    		send_fans_speed_now(!(f->flags & (1<<FAN_SPEED_FORCED_BIT)));
 		        }
 	        }
 	        else ifcmp("day") f->speed_day = val;
@@ -403,6 +403,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 		else ifcmp("vars_") { // cfg_
 			cstr += 5;
         	ifcmp("fans_speed_ov") global_vars.fans_speed_override = val;
+        	else ifcmp("receive_timeout") global_vars.receive_timeout = val;
         	else ifcmp("save") {
 				if(val == 1) write_global_vars_cfg();
         	}
@@ -442,9 +443,13 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 #endif
 #ifdef USE_SNTP
 		else ifcmp("sntp") {
-			syscfg.cfg.b.sntp_ena = (val)? 1 : 0;
-			if(syscfg.cfg.b.sntp_ena) sntp_inits(UTC_OFFSET);
-			else sntp_close();
+			cstr += 4;
+			ifcmp("_time") sntp_set_time(val);
+			else {
+				syscfg.cfg.b.sntp_ena = (val)? 1 : 0;
+				if(syscfg.cfg.b.sntp_ena) sntp_inits(UTC_OFFSET);
+				else sntp_close();
+			}
 		}
 #endif
 #ifdef USE_CAPTDNS
@@ -463,7 +468,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 	else ifcmp("ShowByDay") Web_ShowByDay = val;
 	else ifcmp("now_night") now_night_override = val;
 	else ifcmp("iot_") { // from iot_cloud.ini
-		cstr+=4;
+		cstr += 4;
 		uint16 len = os_strlen(pvar) + 1;
 		ifcmp("server") {
 			if(iot_server_name != NULL) os_free(iot_server_name);

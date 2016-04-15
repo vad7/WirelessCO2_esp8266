@@ -491,5 +491,5 @@ int32 ICACHE_FLASH_ATTR current_cfg_length(void)
 		if(fobj.x == fobj_x_free) break;
 		faddr += align(fobj_head_size + (fobj.n.size > MAX_FOBJ_SIZE ? MAX_FOBJ_SIZE : fobj.n.size));
 	} while(faddr <= (base_addr + FMEMORY_SCFG_BANK_SIZE - bank_head_size - align(fobj_head_size+1)));
-	return faddr - base_addr;
+	return faddr - base_addr + fobj_head_size;
 }
