@@ -157,7 +157,7 @@ void ICACHE_FLASH_ATTR web_fans_xml(TCP_SERV_CONN *ts_conn)
 				"<spc>%d</spc><tst>%d</tst><ttm>%u</ttm></fan>\n",
 			f->flags,
 			//f->rf_channel, f->address_LSB, f->override_day, f->override_night, f->speed_max, f->speed_min, f->speed_day, f->speed_night,
-			f->speed_current, f->transmit_last_status, f->transmit_ok_last_time);
+			f->speed_current, f->transmit_last_status, sntp_local_to_UTC_time(f->transmit_ok_last_time));
 		if(++web_conn->udata_start >= web_conn->udata_stop) {
 			ClrSCB(SCB_RETRYCB);
 			return;
