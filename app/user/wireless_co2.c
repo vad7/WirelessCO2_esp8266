@@ -213,7 +213,7 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 	fan_speed_previous = 0;
 	//ets_timer_disarm(&user_loop_timer);
 	os_timer_setfn(&user_loop_timer, (os_timer_func_t *)user_loop, NULL);
-	ets_timer_arm_new(&user_loop_timer, 3000, 1, 1); // 1s, repeat
+	ets_timer_arm_new(&user_loop_timer, 1000, 1, 1); // 1s, repeat
 	NRF24_init(); // After init transmit must be delayed
 	iot_cloud_init();
 	if(history_co2 == NULL) history_co2 = os_malloc(HISTORY_CO2_BUFFER);

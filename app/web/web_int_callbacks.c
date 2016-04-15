@@ -143,14 +143,21 @@ void ICACHE_FLASH_ATTR web_fans_xml(TCP_SERV_CONN *ts_conn)
     	tcp_puts_fd("<night>%d</night>", now_night);
     	tcp_puts_fd("<night_ov>%d</night_ov>", now_night_override);
     	tcp_puts_fd("<sp_ov>%d</sp_ov>", global_vars.fans_speed_override);
+    	tcp_puts_fd("<co2>%d</co2>", co2_send_data.CO2level);
+    	tcp_puts_fd("<time_co2>%u</time_co2>", sntp_local_to_UTC_time(CO2_last_time));
+    	tcp_puts_fd("<time_sntp>%u</time_sntp>", get_sntp_time());
 	}
 	while(web_conn->msgbuflen + 250 <= web_conn->msgbufsize)
 	{ // +max string size
 		CFG_FAN *f = &cfg_fans[web_conn->udata_start];
 		tcp_puts_fd("<fan id=\"%d\"><name>", web_conn->udata_start);
 		web_conn->msgbuflen += htmlcode(&web_conn->msgbuf[web_conn->msgbuflen], f->name, sizeof(f->name) * 6, sizeof(f->name));
-		tcp_puts_fd("</name><fl>%u</fl><rf>%d</rf><addr>%d</addr><ovd>%d</ovd><ovn>%d</ovn><spmax>%d</spmax><spmin>%d</spmin><spd>%d</spd><spn>%d</spn><spc>%d</spc><tst>%d</tst><ttm>%u</ttm></fan>\n",
-			f->flags, f->rf_channel, f->address_LSB, f->override_day, f->override_night, f->speed_max, f->speed_min, f->speed_day, f->speed_night, f->speed_current, f->transmit_last_status, f->transmit_ok_last_time);
+		tcp_puts_fd("</name><fl>%u</fl>"
+				//"<rf>%d</rf><addr>%d</addr><ovd>%d</ovd><ovn>%d</ovn><spmax>%d</spmax><spmin>%d</spmin><spd>%d</spd><spn>%d</spn>"
+				"<spc>%d</spc><tst>%d</tst><ttm>%u</ttm></fan>\n",
+			f->flags,
+			//f->rf_channel, f->address_LSB, f->override_day, f->override_night, f->speed_max, f->speed_min, f->speed_day, f->speed_night,
+			f->speed_current, f->transmit_last_status, f->transmit_ok_last_time);
 		if(++web_conn->udata_start >= web_conn->udata_stop) {
 			ClrSCB(SCB_RETRYCB);
 			return;
