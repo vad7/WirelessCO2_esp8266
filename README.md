@@ -5,6 +5,8 @@ Have the webserver, Over-The-Air firmware updating, SNTP time, IoT cloud ([http:
 
 Gathering information from [CO2 sensor with nRF24L01](http://we.easyelectronics.ru/smarthouse/dorabotka-provetrivatelya-ili-upravlenie-ventilyaciey-ot-datchika-uglekislogo-gaza.html) and controls ventilation fans.
 
+![alt tag](https://github.com/vad7/WirelessCO2_esp8266/blob/master/main_screen.jpg)
+
 Schematic: 
 ![SCH](https://github.com/vad7/WirelessCO2_esp8266/blob/master/WirelessCO2.jpg)
 
