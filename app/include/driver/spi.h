@@ -62,7 +62,7 @@
 
 //Define some default SPI clock settings
 #define SPI_CLK_PREDIV 20
-#define SPI_CLK_CNTDIV 2
+#define SPI_CLK_CNTDIV 4
 #define SPI_CLK_FREQ CPU_CLK_FREQ/(SPI_CLK_PREDIV*SPI_CLK_CNTDIV) // 80 / 40 = 2 MHz
 
 void spi_init(void) ICACHE_FLASH_ATTR;

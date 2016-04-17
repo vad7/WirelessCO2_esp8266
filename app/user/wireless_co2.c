@@ -129,7 +129,7 @@ xStartSending:
 			CO2_send_fan_idx = 0;
 			CO2_work_flag = 2;
 			CO2_send_flag = 0;
-			NRF24_Powerdown(); // need for SI24R01
+			NRF24_Powerdown();
 			iot_cloud_send(1);
 		} else if(receive_timeout) {
 			if(--receive_timeout == 0) goto xStartSending;
@@ -171,6 +171,7 @@ xRepeat:
 xNextFAN:
 				if(++CO2_send_fan_idx >= cfg_co2.fans) CO2_work_flag = 0;
 				CO2_send_flag = 0;
+				NRF24_Powerdown();
 			}
 		}
 	}
