@@ -2,6 +2,7 @@
 #define _power_meter_
 
 #include "sntp.h"
+#include "debug_ram.h"
 
 #define FANS_MAX 		10
 #define FAN_SPEED_MAX	6

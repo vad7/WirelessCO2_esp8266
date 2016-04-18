@@ -179,6 +179,9 @@ xNextFAN:
 
 void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 calc_speed)
 {
+//	NRF24_SET_CE_LOW;
+//	os_printf("GPIO4(%x): 0x%x\n", (1<<NRF24_CE_GPIO), GPIO_IN);
+//	uart_wait_tx_fifo_empty();
 	if(calc_speed) CO2_set_fans_speed_current();
 	if(CO2_work_flag == 2 && CO2_send_flag == 1) {
 		CO2_send_flag = 2; // if now sending - repeat
@@ -187,6 +190,8 @@ void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 calc_speed)
 		CO2_send_flag = 0;
 		CO2_send_fan_idx = 0;
 	}
+//	NRF24_SET_CE_HI;
+//	os_printf("GPIO4(%x): 0x%x\n", (1<<NRF24_CE_GPIO), GPIO_IN);
 }
 
 void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)

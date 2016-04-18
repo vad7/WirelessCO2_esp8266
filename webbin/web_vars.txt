@@ -83,6 +83,12 @@ sys_vdd
 inc:footer.inc
 inc:vdd.inc
 inc:menu.inc
+dbg_addr
+dbg_len
+dbg_ram
+inc:footer.inc
+inc:vdd.inc
+inc:menu.inc
 sys_const_108
 sys_sleep_old
 sys_rst

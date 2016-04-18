@@ -6,6 +6,22 @@
  */ 
 #include "hw/esp8266.h"
 
+#define NRF24_CE_GPIO			4
+//#define NRF24_CSN_GPIO			15 // if omitted - hardware CS
+#define NRF24_SET_CE_HI			GPIO_OUT_W1TS = (1<<NRF24_CE_GPIO)  // Start transmit
+#define NRF24_SET_CE_LOW		GPIO_OUT_W1TC = (1<<NRF24_CE_GPIO)
+#ifdef NRF24_CSN_GPIO
+#define NRF24_SET_CSN_HI		GPIO_OUT_W1TS = (1<<NRF24_CSN_GPIO)
+#define NRF24_SET_CSN_LOW		GPIO_OUT_W1TC = (1<<NRF24_CSN_GPIO)
+#else
+#define NRF24_SET_CSN_HI
+#define NRF24_SET_CSN_LOW
+#endif
+
+//#define NRF24_RF_CHANNEL		2 // default
+#define NRF24_ADDRESS_LEN		3 // 3..5 bytes
+#define NRF24_PAYLOAD_LEN		4 // MUST be EQUAL or GREATER than Address field width!!
+
 /* Register map table */
 #define NRF24_REG_CONFIG		0x00
 #define NRF24_REG_EN_AA			0x01
@@ -80,6 +96,8 @@
 
 #define NRF24_ReceiveMode			(1<<NRF24_BIT_PRIM_RX)
 #define NRF24_TransmitMode			0
+
+#define NRF24_CONFIG			(1<<NRF24_BIT_EN_CRC) | (1<<NRF24_BIT_CRCO) // Enable CRC, CRC 2 bytes, IRQ disabled
 
 typedef enum
 {

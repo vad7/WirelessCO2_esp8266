@@ -9,23 +9,6 @@
 #include "driver/spi.h"
 #include "driver/nrf24l01.h"
 
-#define NRF24_CE_GPIO			5
-//#define NRF24_CSN_GPIO			15 // if omitted - hardware CS
-#define NRF24_SET_CE_HI			GPIO_OUT_W1TS = (1<<NRF24_CE_GPIO)  // Start transmit
-#define NRF24_SET_CE_LOW		GPIO_OUT_W1TC = (1<<NRF24_CE_GPIO)
-#ifdef NRF24_CSN_GPIO
-#define NRF24_SET_CSN_HI		GPIO_OUT_W1TS = (1<<NRF24_CSN_GPIO)
-#define NRF24_SET_CSN_LOW		GPIO_OUT_W1TC = (1<<NRF24_CSN_GPIO)
-#else
-#define NRF24_SET_CSN_HI
-#define NRF24_SET_CSN_LOW
-#endif
-
-//#define NRF24_RF_CHANNEL		2 // default
-#define NRF24_ADDRESS_LEN		3 // 3..5 bytes
-#define NRF24_PAYLOAD_LEN		4 // MUST be EQUAL or GREATER than Address field width!!
-#define NRF24_CONFIG			(1<<NRF24_BIT_EN_CRC) | (1<<NRF24_BIT_CRCO) // Enable CRC, CRC 2 bytes, IRQ disabled
-
 uint8_t NRF24_Buffer[NRF24_PAYLOAD_LEN]; // MUST be EQUAL or GREATER than Address field width!!!
 
 uint8_t __attribute__((aligned(2))) NRF24_INIT_DATA[] = {
