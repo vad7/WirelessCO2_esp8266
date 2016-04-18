@@ -1208,7 +1208,6 @@ const char disk_ok_filename[] ICACHE_RODATA_ATTR = "/disk_ok.htm";
 const char disk_err1_filename[] ICACHE_RODATA_ATTR = "/disk_er1.htm";
 const char disk_err2_filename[] ICACHE_RODATA_ATTR = "/disk_er2.htm";
 const char disk_err3_filename[] ICACHE_RODATA_ATTR = "/disk_er3.htm";
-const char disk_err4_filename[] ICACHE_RODATA_ATTR = "/disk_er4.htm";
 const char sysconst_filename[] ICACHE_RODATA_ATTR = "sysconst";
 const char settings_filename[] ICACHE_RODATA_ATTR = "settings";
 #ifdef USE_OVERLAY
@@ -1220,13 +1219,36 @@ const char file_label[] ICACHE_RODATA_ATTR = "file";
 // OTA
 #define OTA_flash_struct_id 0x2341544F // 'OTA#'
 #define firmware_start_magic 0xE9
-typedef struct __packed {
+typedef struct {
 	uint32 id;
 	uint32 image_addr;
 	uint32 image_sectors;
 } OTA_flash_struct;
-const char flash_filename[] ICACHE_RODATA_ATTR = "firmware";
-uint32	flash_firmware_size;
+uint32	file_load_size;
+// Writes(fwrite=1) or clear(0) OTA header, return 0 - ok
+int ICACHE_FLASH_ATTR OTA_write_header(uint8 fwrite)
+{
+	uint32 *tmpbuf = os_malloc(flashchip_sector_size);
+	if(tmpbuf == NULL) return 500;
+	spi_flash_read(esp_init_data_default_addr, tmpbuf, flashchip_sector_size);
+	OTA_flash_struct *OTA = (OTA_flash_struct *)((uint8 *)tmpbuf + MAX_SYS_CONST_BLOCK);
+	if(fwrite) {
+		OTA->id = OTA_flash_struct_id;
+		OTA->image_addr = WEBFS_base_addr();
+		OTA->image_sectors = file_load_size / flashchip_sector_size + 1;
+		#if DEBUGSOO > 4
+			os_printf("\nFirmware loaded to %x, %d(%d)\n", OTA->image_addr, file_load_size, OTA->image_sectors);
+		#endif
+	} else {
+		if(OTA->id != OTA_flash_struct_id) goto xEnd;
+		os_memset(OTA, 0xFF, sizeof(OTA_flash_struct));
+	}
+	spi_flash_erase_sector(esp_init_data_default_sec);
+	spi_flash_write(esp_init_data_default_addr, tmpbuf, flashchip_sector_size);
+xEnd:
+	os_free(tmpbuf);
+	return 0;
+}
 // OTA
 
 LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLOAD pupload, uint8 pstr, uint16 len)
@@ -1306,25 +1328,34 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 					if(rom_xstrcmp(pupload->name, file_label)) { // !os_memcmp((void*)pupload->name, "file", 4)
 						if(len < sizeof(WEBFS_DISK_HEADER)) return 0; // докачивать
 						WEBFS_DISK_HEADER *dhead = (WEBFS_DISK_HEADER *)pstr;
+						file_load_size = web_conn->content_len - pupload->sizeboundary - 8;
 						if(dhead->id != WEBFS_DISK_ID || dhead->ver != WEBFS_DISK_VER
-								|| (web_conn->content_len - pupload->sizeboundary - 8 < dhead->disksize)) {
-							if(isWEBFSLocked) return 400;
-							SetSCB(SCB_REDIR);
-							rom_xstrcpy(pupload->filename, disk_err1_filename); // os_memcpy(pupload->filename,"/disk_er1.htm\0",14); // неверный формат
-							return 200;
-						};
-						if(dhead->disksize > WEBFS_max_size()) {
-							if(isWEBFSLocked) return 400;
-							SetSCB(SCB_REDIR);
-							rom_xstrcpy(pupload->filename, disk_err2_filename); // os_memcpy(pupload->filename,"/disk_er2.htm\0",14); // не влезет
-							return 200;
-						};
-						pupload->fsize = dhead->disksize;
+								|| (file_load_size < dhead->disksize)) {
+							if(*pstr == firmware_start_magic) {
+								// OTA firmware upload
+								if(OTA_write_header(0)) return 500; // clear OTA header
+								pupload->fsize = file_load_size;
+								pupload->status = 4; // загрузка прошивки на место WEBFS
+							} else {
+								if(isWEBFSLocked) return 400;
+								SetSCB(SCB_REDIR);
+								rom_xstrcpy(pupload->filename, disk_err1_filename); // os_memcpy(pupload->filename,"/disk_er1.htm\0",14); // неверный формат
+								return 200;
+							}
+						} else {
+							if(dhead->disksize > WEBFS_max_size()) {
+								if(isWEBFSLocked) return 400;
+								SetSCB(SCB_REDIR);
+								rom_xstrcpy(pupload->filename, disk_err2_filename); // os_memcpy(pupload->filename,"/disk_er2.htm\0",14); // не влезет
+								return 200;
+							};
+							pupload->fsize = dhead->disksize;
+							#if DEBUGSOO > 4
+								os_printf("updisk[%u]=ok,m=%u ", dhead->disksize, WEBFS_max_size() );
+							#endif
+							pupload->status = 3; // = 3 загрузка WebFileSystem во flash
+						}
 						pupload->faddr = WEBFS_base_addr();
-#if DEBUGSOO > 4
-						os_printf("updisk[%u]=ok,m=%u ", dhead->disksize, WEBFS_max_size() );
-#endif
-						pupload->status = 3; // = 3 загрузка WebFileSystem во flash
 						isWEBFSLocked = true;
 						break;
 					}
@@ -1374,24 +1405,6 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 						pupload->status = 2; // = 2 загрузка файла во flash
 						break;
 					}
-					// OTA firmware upload
-					else if(rom_xstrcmp(pupload->name, flash_filename)) {
-#if DEBUGSOO > 4
-						os_printf(" 1byte=%u %u %u %u", *pstr, pstr[0], pstr[1], pstr[2]);
-#endif
-						if(*pstr != firmware_start_magic) { // wrong file
-							if(isWEBFSLocked) return 400;
-							SetSCB(SCB_REDIR);
-							rom_xstrcpy(pupload->filename, disk_err4_filename); // os_memcpy(pupload->filename,"/disk_er1.htm\0",14); // неверный формат
-							return 200;
-						}
-						pupload->fsize = flash_firmware_size = web_conn->content_len - pupload->sizeboundary - 8;
-						pupload->faddr = WEBFS_base_addr();
-						pupload->status = 4; // загрузка прошивки на место WEBFS
-						isWEBFSLocked = true;
-						break;
-					}
-					//
 					else if(rom_xstrcmp(pupload->name, sector_filename)) {
 						pupload->fsize = SPI_FLASH_SEC_SIZE;
 						pupload->faddr = ahextoul(&pupload->name[sector_filename_size]) << 12;
@@ -1509,21 +1522,9 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 						return 400; //  не всё передано или неверный формат
 					} else if(pupload->status == 4) { // OTA firmware loaded
 						#if SIZE_SAVE_SYS_CONST > MAX_SYS_CONST_BLOCK
-							ERROR: SYS_CONST > MAX_SYS_CONST_BLOCK
+							#error SYS_CONST > MAX_SYS_CONST_BLOCK
 						#endif
-						uint32 *tmpbuf = os_malloc(flashchip_sector_size);
-						if(tmpbuf == NULL) return 500;
-						spi_flash_read(esp_init_data_default_addr, tmpbuf, flashchip_sector_size);
-						OTA_flash_struct *OTA = (OTA_flash_struct *)((uint8 *)tmpbuf + MAX_SYS_CONST_BLOCK);
-						OTA->id = OTA_flash_struct_id;
-						OTA->image_addr = WEBFS_base_addr();
-						OTA->image_sectors = flash_firmware_size / flashchip_sector_size + 1;
-#if DEBUGSOO > 4
-						os_printf("\nFirmware loaded to %x, %d(%d)\n", OTA->image_addr, flash_firmware_size, OTA->image_sectors);
-#endif
-						spi_flash_erase_sector(esp_init_data_default_sec);
-						spi_flash_write(esp_init_data_default_addr, tmpbuf, flashchip_sector_size);
-						os_free(tmpbuf);
+						if(OTA_write_header(1)) return 500; // prepare OTA header
 						web_conn->web_disc_cb = (web_func_disc_cb)_ResetVector; // reset
 					} else if(!isWEBFSLocked) { // WebFS OK
 						SetSCB(SCB_REDIR);

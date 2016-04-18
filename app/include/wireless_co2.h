@@ -20,7 +20,7 @@ typedef struct __attribute__((packed)) {
 	uint8	iot_cloud_enable;		// use "protect/iot_cloud.ini" to send data to IoT cloud
 	char	csv_delimiter; 			// ','
 	uint8	fans_speed_night_max;	// speed max at night
-
+	uint16	page_refresh_time;		// ms
 //	char sntp_server[20];
 } CFG_CO2;
 CFG_CO2 __attribute__((aligned(4))) cfg_co2;

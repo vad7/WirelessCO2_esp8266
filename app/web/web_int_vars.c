@@ -357,6 +357,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 				}
 	        	else ifcmp("max") cfg_co2.fans_speed_night_max = val;
 	        }
+	        else ifcmp("refresh_t") cfg_co2.page_refresh_time = val;
 //			else ifcmp("reset_data") {
 //				if(os_strcmp(pvar, "RESET") == 0) ; //_clear_all_data();
 //			}

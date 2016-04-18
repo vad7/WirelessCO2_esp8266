@@ -125,12 +125,12 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 				os_printf("NRF Received at %u, CO2: %u, F: %d (%d)\n", CO2_last_time, co2_send_data.CO2level, co2_send_data.FanSpeed, co2_send_data.Flags);
 			#endif
 			CO2_set_fans_speed_current();
+			iot_cloud_send(1);
 xStartSending:
 			CO2_send_fan_idx = 0;
 			CO2_work_flag = 2;
 			CO2_send_flag = 0;
 			NRF24_Powerdown();
-			iot_cloud_send(1);
 		} else if(receive_timeout) {
 			if(--receive_timeout == 0) goto xStartSending;
 		}
@@ -196,9 +196,10 @@ void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 calc_speed)
 
 void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 {
-	if(flash_read_cfg(&cfg_co2, ID_CFG_CO2, sizeof(cfg_co2)) != sizeof(cfg_co2)) {
+	if(flash_read_cfg(&cfg_co2, ID_CFG_CO2, sizeof(cfg_co2)) <= 0) {
 		// defaults
 		os_memset(&cfg_co2, 0, sizeof(cfg_co2));
+		cfg_co2.page_refresh_time = 5000;
 		cfg_co2.csv_delimiter = ',';
 		cfg_co2.sensor_rf_channel = 2;
 		cfg_co2.address_LSB = 0xC0;
@@ -210,10 +211,15 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		cfg_co2.fan_speed_threshold[4] = 900;
 		cfg_co2.fan_speed_threshold[5] = 1100;
 	}
-	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) != sizeof(cfg_fans)) {
+	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) <= 0) {
 		os_memset(&cfg_fans, 0, sizeof(cfg_fans));
 	}
-	if(flash_read_cfg(&global_vars, ID_CFG_VARS, sizeof(global_vars)) != sizeof(global_vars)) {
+	uint8 i;
+	for(i = 0; i < cfg_co2.fans; i++) {
+		cfg_fans[i].transmit_last_status = 0;
+		cfg_fans[i].transmit_ok_last_time = 0;
+	}
+	if(flash_read_cfg(&global_vars, ID_CFG_VARS, sizeof(global_vars)) <= 0) {
 		os_memset(&global_vars, 0, sizeof(global_vars));
 	}
 	fan_speed_previous = 0;

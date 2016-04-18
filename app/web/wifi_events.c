@@ -28,7 +28,7 @@
 #include "modbustcp.h"
 #endif
 
-void iot_cloud_send(uint8 fwork) ICACHE_FLASH_ATTR;
+#include "wireless_co2.h"
 
 struct s_probe_requests buf_probe_requests[MAX_COUNT_BUF_PROBEREQS] DATA_IRAM_ATTR;
 uint32 probe_requests_count DATA_IRAM_ATTR;
@@ -263,6 +263,7 @@ void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *evt)
 #if DEBUGSOO > 1
 	os_printf("WiFi event(%u): ", evt->event);
 #endif
+	dbg_printf("Wifi e:%d\n", evt->event);
 	switch (evt->event) {
 		case EVENT_SOFTAPMODE_PROBEREQRECVED:
 		{

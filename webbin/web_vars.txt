@@ -11,8 +11,6 @@ inc:timer.inc
 inc:footer.inc
 inc:timer.inc
 inc:footer.inc
-inc:timer.inc
-inc:footer.inc
 fans_xml
 inc:grfx1.inc
 inc:grfx2.inc
@@ -33,6 +31,7 @@ inc:footer.inc
 inc:vdd.inc
 inc:time.inc
 cfg_co2_fans
+cfg_co2_refresh_t
 cfg_co2_fans
 now_night_override
 gpio1_inp
@@ -85,9 +84,12 @@ inc:vdd.inc
 inc:menu.inc
 dbg_addr
 dbg_len
+dbg_size
+dbg_enable
 dbg_ram
 inc:footer.inc
 inc:vdd.inc
+dbg_ram
 inc:menu.inc
 sys_const_108
 sys_sleep_old
@@ -188,6 +190,7 @@ cfg_co2_night_start_wd
 cfg_co2_night_end_wd
 cfg_co2_night_max
 cfg_co2_csv_delim
+cfg_co2_refresh_t
 cfg_iot_cloud_enable
 cfg_iot_ini
 inc:footer.inc
