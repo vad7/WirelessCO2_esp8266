@@ -192,6 +192,7 @@ cfg_co2_night_end_wd
 cfg_co2_night_max
 cfg_co2_csv_delim
 cfg_co2_refresh_t
+cfg_co2_history_size
 cfg_iot_cloud_enable
 cfg_iot_ini
 inc:footer.inc

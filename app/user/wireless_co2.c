@@ -25,6 +25,7 @@ uint16 receive_timeout;
 uint16_t CO2LevelAverageIdx = CO2LevelAverageArrayLength;
 uint16_t CO2LevelAverageArray[CO2LevelAverageArrayLength];
 
+/*
 void dump_NRF_registers(void)
 {
 	uint8 i;
@@ -45,6 +46,7 @@ void dump_NRF_registers(void)
 	os_printf("\n");
 	#endif
 }
+*/
 
 void ICACHE_FLASH_ATTR set_new_rf_channel(uint8 ch)
 {
@@ -137,15 +139,7 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 		}
 		receive_timeout = global_vars.receive_timeout;
 	} else if(CO2_work_flag == 1) { // wait incoming
-
-		uint8 r = NRF24_SendCommand(NRF24_CMD_NOP);
-		dbg_printf(" %x", r);
-		#if DEBUGSOO > 4
-			os_printf("%2x ", r);
-		#endif
-
-
-
+		//dbg_printf(" %x", NRF24_SendCommand(NRF24_CMD_NOP));
 		if(NRF24_Receive((uint8 *)&co2_send_data)) { // received
 			time_t t = get_sntp_localtime();
 			CO2_Averaging();
@@ -158,8 +152,8 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 				uint32 idx = history_co2_len * 15;
 				uint8  idxt = idx % 10;
 				idx /= 10;
-				if(idx >= cfg_co2.history_co2_size - 2) {
-					os_memmove(history_co2, history_co2 + 3, cfg_co2.history_co2_size - 3);
+				if(idx >= cfg_co2.history_size - 2) {
+					os_memmove(history_co2, history_co2 + 3, cfg_co2.history_size - 3);
 					history_co2_len -= 2;
 				}
 				// MSB(32 13 21 ...)
@@ -212,9 +206,7 @@ xRepeat:
 				if(NRF24_transmit_status == NRF24_Transmit_Ok) {
 					f->transmit_ok_last_time = get_sntp_localtime();
 				}
-
-				dump_NRF_registers();
-
+				//dump_NRF_registers();
 				if(CO2_send_flag == 2) { // need repeat
 					CO2_send_flag = 0;
 					CO2_send_fan_idx = 0;
@@ -231,12 +223,7 @@ xNextFAN:
 
 void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 fan, uint8 calc_speed)
 {
-//	NRF24_SET_CE_LOW;
-//	os_printf("GPIO4(%x): 0x%x\n", (1<<NRF24_CE_GPIO), GPIO_IN);
-//	uart_wait_tx_fifo_empty();
-
-	dump_NRF_registers();
-
+	//dump_NRF_registers();
 	if(calc_speed) CO2_set_fans_speed_current(fan);
 	if(CO2_work_flag == 2 && CO2_send_flag == 1) {
 		CO2_send_flag = 2; // if now sending - repeat
@@ -245,8 +232,6 @@ void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 fan, uint8 calc_speed)
 		CO2_send_flag = 0;
 		CO2_send_fan_idx = 0;
 	}
-//	NRF24_SET_CE_HI;
-//	os_printf("GPIO4(%x): 0x%x\n", (1<<NRF24_CE_GPIO), GPIO_IN);
 }
 
 void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
@@ -266,7 +251,7 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		cfg_co2.fan_speed_threshold[4] = 900;
 		cfg_co2.fan_speed_threshold[5] = 1100;
 	}
-	if(cfg_co2.history_co2_size <= 2) cfg_co2.history_co2_size = 8192; // bytes
+	if(cfg_co2.history_size <= 2) cfg_co2.history_size = 8192; // bytes
 	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) <= 0) {
 		os_memset(&cfg_fans, 0, sizeof(cfg_fans));
 	}
@@ -284,9 +269,8 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 	ets_timer_arm_new(&user_loop_timer, 1000, 1, 1); // 1s, repeat
 	NRF24_init(); // After init transmit must be delayed
 	iot_cloud_init();
-	if(history_co2 == NULL) history_co2 = os_malloc(cfg_co2.history_co2_size);
-
-	dump_NRF_registers();
+	if(history_co2 == NULL) history_co2 = os_malloc(cfg_co2.history_size);
+	//dump_NRF_registers();
 
 //	#if DEBUGSOO > 4
 //		os_printf("\n");

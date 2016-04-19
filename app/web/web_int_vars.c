@@ -358,6 +358,14 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 	        	else ifcmp("max") cfg_co2.fans_speed_night_max = val;
 	        }
 	        else ifcmp("refresh_t") cfg_co2.page_refresh_time = val;
+	        else ifcmp("history_size") {
+	        	if(cfg_co2.history_size != val) {
+	        		os_free(history_co2);
+		        	cfg_co2.history_size = val;
+					history_co2 = os_malloc(cfg_co2.history_size);
+					history_co2_len = 0;
+	        	}
+	        }
 //			else ifcmp("reset_data") {
 //				if(os_strcmp(pvar, "RESET") == 0) ; //_clear_all_data();
 //			}

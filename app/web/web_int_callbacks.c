@@ -852,6 +852,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 		        	else ifcmp("max") tcp_puts("%d", cfg_co2.fans_speed_night_max);
 		        }
 		        else ifcmp("refresh_t") tcp_puts("%u", cfg_co2.page_refresh_time);
+		        else ifcmp("history_size") tcp_puts("%u", cfg_co2.history_size);
 		    }
 		    else ifcmp("fan_") { // cfg_
 	        	cstr += 4;

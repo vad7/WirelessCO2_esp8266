@@ -21,7 +21,7 @@ typedef struct __attribute__((packed)) {
 	char	csv_delimiter; 			// ','
 	uint8	fans_speed_night_max;	// speed max at night
 	uint16	page_refresh_time;		// ms
-	uint16	history_co2_size;		// CO2 store RAM buffer size
+	uint16	history_size;			// CO2 store RAM buffer size
 //	char sntp_server[20];
 } CFG_CO2;
 CFG_CO2 __attribute__((aligned(4))) cfg_co2;
