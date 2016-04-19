@@ -16,9 +16,9 @@ uint8_t __attribute__((aligned(2))) NRF24_INIT_DATA[] = {
 //	NRF24_CMD_W_REGISTER | NRF24_REG_DYNPD,		0b000000, // Dynamic payload
 //	NRF24_CMD_W_REGISTER | NRF24_REG_RF_CH,		NRF24_RF_CHANNEL, // RF channel
 	NRF24_CMD_W_REGISTER | NRF24_REG_SETUP_AW,	NRF24_ADDRESS_LEN - 2, // address length
-	NRF24_CMD_W_REGISTER | NRF24_REG_SETUP_RETR,(0b0100<<NRF24_BIT_ARD) | (0b1111<<NRF24_BIT_ARC), // Auto Retransmit Delay = 1000uS, 15 Re-Transmit on fail
-	NRF24_CMD_W_REGISTER | NRF24_REG_RF_SETUP,	(0<<NRF24_BIT_RF_DR_LOW) | (0<<NRF24_BIT_RF_DR_HIGH) | 0b111, // Data rate: 1Mbps, Max power (0b111)
-	NRF24_CMD_W_REGISTER | NRF24_REG_EN_AA,		0b000001, // Enable �Auto Acknowledgment� for pipes 0, 1
+	NRF24_CMD_W_REGISTER | NRF24_REG_SETUP_RETR,(0b0010<<NRF24_BIT_ARD) | (0b1111<<NRF24_BIT_ARC), // Auto Retransmit Delay = 750uS, 15 Re-Transmit on fail
+	NRF24_CMD_W_REGISTER | NRF24_REG_RF_SETUP,	(0<<NRF24_BIT_RF_DR_LOW) | (0<<NRF24_BIT_RF_DR_HIGH) | 0b110, // Data rate: 1Mbps, Max power = 0b11(1)
+	NRF24_CMD_W_REGISTER | NRF24_REG_EN_AA,		0b000001, // Enable Auto Acknowledgment for pipes 0, 1
 	NRF24_CMD_W_REGISTER | NRF24_REG_EN_RXADDR,	0b000001, // Enable data pipes: 0, 1
 	NRF24_CMD_W_REGISTER | NRF24_REG_RX_PW_P0,	NRF24_PAYLOAD_LEN
 };
@@ -101,7 +101,9 @@ void ICACHE_FLASH_ATTR NRF24_SetMode(uint8_t mode)
 	if(mode & NRF24_ReceiveMode) { // Receive mode
 		//NRF24_SendCommand(NRF24_CMD_FLUSH_RX);
 		NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
+#ifdef NRF24_CE_GPIO
 		NRF24_SET_CE_HI; // start receiving
+#endif
 	}
 }
 
@@ -134,17 +136,17 @@ void NRF24_timer_handler(void)
 			os_printf("TRE:%u,%u\n", NRF24_transmit_cnt, system_get_time());
 		#endif
 	}
-	NRF24_SET_CE_LOW;
 }
 
 // Start transmitting payload, see - NRF24_transmit_status
 void ICACHE_FLASH_ATTR NRF24_Transmit(uint8_t *payload)
 {
-	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
 	NRF24_SendCommand(NRF24_CMD_FLUSH_TX);
+	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
 	NRF24_WriteArray(NRF24_CMD_W_TX_PAYLOAD, payload, NRF24_PAYLOAD_LEN);
+#ifdef NRF24_CE_GPIO
 	NRF24_SET_CE_HI; // Start transmission
-
+#endif
 	NRF24_transmit_status = NRF24_Transmitting;
 	NRF24_transmit_cnt = 50; // ms
 	os_timer_setfn(&NRF24_timer, (os_timer_func_t *)NRF24_timer_handler, NULL);
@@ -161,22 +163,24 @@ uint8_t ICACHE_FLASH_ATTR NRF24_SetAddresses(uint8_t addr_LSB)
 	NRF24_ReadArray(NRF24_CMD_R_REGISTER | NRF24_REG_TX_ADDR, NRF24_Buffer, NRF24_ADDRESS_LEN);
 	return NRF24_Buffer[0] == addr_LSB;
 }
-
+/*
 void ICACHE_FLASH_ATTR NRF24_Powerdown(void)
 {
 	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_CONFIG, NRF24_CONFIG); // Power down
 	NRF24_SET_CE_LOW;
 }
-
+*/
 // After init transmit must be delayed
 void ICACHE_FLASH_ATTR NRF24_init(void)
 {
 	ets_intr_lock();
 	spi_init();
+#ifdef NRF24_CE_GPIO
 	SET_PIN_FUNC(NRF24_CE_GPIO, (MUX_FUN_IO_PORT(NRF24_CE_GPIO) )); // установить функцию GPIOx в режим порта i/o
 	SET_PIN_PULLUP_DIS(NRF24_CE_GPIO);
 	GPIO_ENABLE_W1TS = (1<<NRF24_CE_GPIO); // Configure GPIO port to output
-	NRF24_SET_CE_LOW;
+	NRF24_SET_CE_HI;
+#endif
 #ifdef NRF24_CSN_GPIO
 	SET_PIN_FUNC(NRF24_CSN_GPIO, (MUX_FUN_IO_PORT(NRF24_CSN_GPIO) )); // установить функцию GPIOx в режим порта i/o
 	SET_PIN_PULLUP_DIS(NRF24_CSN_GPIO);

@@ -25,6 +25,27 @@ uint16 receive_timeout;
 uint16_t CO2LevelAverageIdx = CO2LevelAverageArrayLength;
 uint16_t CO2LevelAverageArray[CO2LevelAverageArrayLength];
 
+void dump_NRF_registers(void)
+{
+	uint8 i;
+	uint8 buf[4];
+	dbg_printf("\nNR: ");
+	#if DEBUGSOO > 4
+	os_printf("\nNR: ");
+	#endif
+	for(i = 0; i <= 0x1D; i++) {
+		NRF24_ReadArray(NRF24_CMD_R_REGISTER + i, buf, 1);
+		dbg_printf("%X=%2x ", i, buf[0]);
+		#if DEBUGSOO > 4
+		os_printf("%X=%2x ", i, buf[0]);
+		#endif
+	}
+	dbg_printf("\n");
+	#if DEBUGSOO > 4
+	os_printf("\n");
+	#endif
+}
+
 void ICACHE_FLASH_ATTR set_new_rf_channel(uint8 ch)
 {
 	if(nrf_last_rf_channel != ch) {
@@ -36,7 +57,7 @@ void ICACHE_FLASH_ATTR set_new_rf_channel(uint8 ch)
 	}
 }
 
-void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
+void ICACHE_FLASH_ATTR CO2_Averaging(void)
 {
 	int16_t i;
 	if(CO2LevelAverageIdx == CO2LevelAverageArrayLength) { // First time
@@ -44,7 +65,13 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 	}
 	if(CO2LevelAverageIdx >= CO2LevelAverageArrayLength) CO2LevelAverageIdx = 0;
 	CO2LevelAverageArray[CO2LevelAverageIdx++] = co2_send_data.CO2level;
+}
+
+// fan = 255 - all
+void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(uint8 nfan)
+{
 	uint32_t average = 0;
+	uint16_t i;
 	for(i = 0; i < CO2LevelAverageArrayLength; i++) average += CO2LevelAverageArray[i];
 	average /= CO2LevelAverageArrayLength;
 	int8_t fanspeed;
@@ -75,7 +102,11 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(void)
 	uint8 night = now_night_override == 2 ? 1 : now_night_override == 1 ? 0 : now_night;
 	if(night && fanspeed > cfg_co2.fans_speed_night_max) fanspeed = cfg_co2.fans_speed_night_max;
 	uint8 fan;
-	for(fan = 0; fan < cfg_co2.fans; fan++) {
+	if(nfan == 255) {
+		fan = 0;
+		nfan = cfg_co2.fans;
+	} else fan = nfan++;
+	for(; fan < nfan; fan++) {
 		CFG_FAN *f = &cfg_fans[fan];
 		if(f->flags & (1<<FAN_SPEED_FORCED_BIT)) continue;
 		int8_t fsp = fanspeed;
@@ -106,31 +137,49 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 		}
 		receive_timeout = global_vars.receive_timeout;
 	} else if(CO2_work_flag == 1) { // wait incoming
+
+		uint8 r = NRF24_SendCommand(NRF24_CMD_NOP);
+		dbg_printf(" %x", r);
+		#if DEBUGSOO > 4
+			os_printf("%2x ", r);
+		#endif
+
+
+
 		if(NRF24_Receive((uint8 *)&co2_send_data)) { // received
 			time_t t = get_sntp_localtime();
+			CO2_Averaging();
 			if(CO2_last_time) {
 				uint16 d = t - CO2_last_time;
 				if(average_period == 0) average_period = d;
 				else average_period = (average_period + d) / 2;
 			}
 			if(history_co2 != NULL) { // store history co2
-				if(history_co2_size == history_co2_len) {
-					os_memmove(history_co2, history_co2 + 2, (history_co2_size - 1) * 2);
-					history_co2_len--;
+				uint32 idx = history_co2_len * 15;
+				uint8  idxt = idx % 10;
+				idx /= 10;
+				if(idx >= cfg_co2.history_co2_size - 2) {
+					os_memmove(history_co2, history_co2 + 3, cfg_co2.history_co2_size - 3);
+					history_co2_len -= 2;
 				}
-				history_co2[history_co2_len++] = co2_send_data.CO2level;
+				// MSB(32 13 21 ...)
+				if(idxt) history_co2[idx] = ((co2_send_data.CO2level & 0xF00) >> 8) | (history_co2[idx] & 0xF0);
+				else history_co2[idx] = (co2_send_data.CO2level & 0xFF0) >> 4;
+				if(idxt) history_co2[idx+1] = co2_send_data.CO2level & 0x0FF;
+				else history_co2[idx+1] = (co2_send_data.CO2level & 0x00F) << 4;
+				history_co2_len++;
 			}
 			CO2_last_time = t;
 			#if DEBUGSOO > 4
 				os_printf("NRF Received at %u, CO2: %u, F: %d (%d)\n", CO2_last_time, co2_send_data.CO2level, co2_send_data.FanSpeed, co2_send_data.Flags);
 			#endif
-			CO2_set_fans_speed_current();
+			NRF24_Standby();
+			CO2_set_fans_speed_current(255);
 			iot_cloud_send(1);
 xStartSending:
 			CO2_send_fan_idx = 0;
 			CO2_work_flag = 2;
 			CO2_send_flag = 0;
-			NRF24_Powerdown();
 		} else if(receive_timeout) {
 			if(--receive_timeout == 0) goto xStartSending;
 		}
@@ -163,6 +212,9 @@ xRepeat:
 				if(NRF24_transmit_status == NRF24_Transmit_Ok) {
 					f->transmit_ok_last_time = get_sntp_localtime();
 				}
+
+				dump_NRF_registers();
+
 				if(CO2_send_flag == 2) { // need repeat
 					CO2_send_flag = 0;
 					CO2_send_fan_idx = 0;
@@ -171,18 +223,21 @@ xRepeat:
 xNextFAN:
 				if(++CO2_send_fan_idx >= cfg_co2.fans) CO2_work_flag = 0;
 				CO2_send_flag = 0;
-				NRF24_Powerdown();
+				NRF24_Standby();
 			}
 		}
 	}
 }
 
-void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 calc_speed)
+void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 fan, uint8 calc_speed)
 {
 //	NRF24_SET_CE_LOW;
 //	os_printf("GPIO4(%x): 0x%x\n", (1<<NRF24_CE_GPIO), GPIO_IN);
 //	uart_wait_tx_fifo_empty();
-	if(calc_speed) CO2_set_fans_speed_current();
+
+	dump_NRF_registers();
+
+	if(calc_speed) CO2_set_fans_speed_current(fan);
 	if(CO2_work_flag == 2 && CO2_send_flag == 1) {
 		CO2_send_flag = 2; // if now sending - repeat
 	} else {
@@ -211,6 +266,7 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		cfg_co2.fan_speed_threshold[4] = 900;
 		cfg_co2.fan_speed_threshold[5] = 1100;
 	}
+	if(cfg_co2.history_co2_size <= 2) cfg_co2.history_co2_size = 8192; // bytes
 	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) <= 0) {
 		os_memset(&cfg_fans, 0, sizeof(cfg_fans));
 	}
@@ -228,8 +284,9 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 	ets_timer_arm_new(&user_loop_timer, 1000, 1, 1); // 1s, repeat
 	NRF24_init(); // After init transmit must be delayed
 	iot_cloud_init();
-	if(history_co2 == NULL) history_co2 = os_malloc(HISTORY_CO2_BUFFER);
-	if(history_co2 != NULL) history_co2_size = HISTORY_CO2_BUFFER / 2;
+	if(history_co2 == NULL) history_co2 = os_malloc(cfg_co2.history_co2_size);
+
+	dump_NRF_registers();
 
 //	#if DEBUGSOO > 4
 //		os_printf("\n");
@@ -254,3 +311,4 @@ bool ICACHE_FLASH_ATTR write_wireless_fans_cfg(void) {
 bool ICACHE_FLASH_ATTR write_global_vars_cfg(void) {
 	return flash_save_cfg(&global_vars, ID_CFG_VARS, sizeof(global_vars));
 }
+

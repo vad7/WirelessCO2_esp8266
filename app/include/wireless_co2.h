@@ -21,6 +21,7 @@ typedef struct __attribute__((packed)) {
 	char	csv_delimiter; 			// ','
 	uint8	fans_speed_night_max;	// speed max at night
 	uint16	page_refresh_time;		// ms
+	uint16	history_co2_size;		// CO2 store RAM buffer size
 //	char sntp_server[20];
 } CFG_CO2;
 CFG_CO2 __attribute__((aligned(4))) cfg_co2;
@@ -61,9 +62,7 @@ typedef struct __attribute__ ((packed)) {
 } GLOBAL_VARS;
 GLOBAL_VARS __attribute__((aligned(4))) global_vars;
 
-#define HISTORY_CO2_BUFFER	3072
-int16_t *history_co2;		// history buffer in the RAM
-uint16	history_co2_size;	// allocated size (by 2 byte)
+uint8  *history_co2;		// history buffer in the RAM
 uint16	history_co2_len;	// current length (by 2 byte)
 uint16  average_period; 	// between receiving (sec), for charts
 
@@ -77,7 +76,7 @@ uint32 Web_ShowByDay; 		// ~ShowByDay~
 uint32 Web_cfg_fan_;		// fan idx for change setting
 //
 
-void send_fans_speed_now(uint8 calc_speed) ICACHE_FLASH_ATTR;
+void send_fans_speed_now(uint8 fan, uint8 calc_speed) ICACHE_FLASH_ATTR;
 void wireless_co2_init(uint8 index) ICACHE_FLASH_ATTR;
 void user_loop(void) ICACHE_FLASH_ATTR;
 bool write_wireless_co2_cfg(void) ICACHE_FLASH_ATTR;

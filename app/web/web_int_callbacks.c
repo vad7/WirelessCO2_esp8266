@@ -170,36 +170,47 @@ void ICACHE_FLASH_ATTR web_fans_xml(TCP_SERV_CONN *ts_conn)
 
 // Output history from last record to previous,
 // yyyy-mm-dd hh:mm:ss,n
+// Attention - memory may be moved while outputting!
 void ICACHE_FLASH_ATTR web_get_history(TCP_SERV_CONN *ts_conn)
 {
     WEB_SRV_CONN *web_conn = (WEB_SRV_CONN *)ts_conn->linkd;
     if(CheckSCB(SCB_RETRYCB)==0) {// Check if this is a first round call
+		tcp_puts("date,value\r\n"); // csv header
     	if(history_co2_len == 0 || history_co2 == NULL || average_period == 0) return; // empty
-		web_conn->udata_start = 0; // cnt of records
+		web_conn->udata_start = history_co2_len - 1; // start idx
 		web_conn->udata_stop = CO2_last_time;
 #if DEBUGSOO > 2
 		os_printf("Output History: ");
 #endif
-		tcp_puts("date,value\r\n"); // csv header
     }
-    if(web_conn->udata_stop != CO2_last_time && history_co2_size == history_co2_len) { // mem moved while outputting
-    	if(web_conn->udata_start == 0) { // end
-    		ClrSCB(SCB_RETRYCB);
-    		return;
-    	}
-    	web_conn->udata_start--;
-    	web_conn->udata_stop = CO2_last_time;
-    }
+//    if(memory moved) {
+//    	if(web_conn->udata_start == 0) { // end
+//    		ClrSCB(SCB_RETRYCB);
+//    		return;
+//    	}
+//    	web_conn->udata_start -= 2;
+//    	web_conn->udata_stop = CO2_last_time;
+//    }
 	while(web_conn->msgbuflen + 50 <= web_conn->msgbufsize) { // +max string size
 		struct tm tm;
-	    time_t time = web_conn->udata_stop - web_conn->udata_start * average_period;
+	    time_t time = web_conn->udata_stop;
 		_localtime(&time, &tm);
+		uint32 idx = web_conn->udata_start * 15;
+		uint8  idxt = idx % 10;
+		idx /= 10;
+		// MSB(32 13 21 ...)
+		uint16 co2 = 0;
+		if(idxt) co2 = (history_co2[idx] & 0x0F) << 8;
+		else co2 = history_co2[idx] << 4;
+		if(idxt) co2 |= history_co2[idx+1];
+		else co2 |= history_co2[idx+1] >> 4;
 		tcp_puts("%04d-%02d-%02d %02d:%02d:%02d%c%d\r\n",
-				1900+tm.tm_year, 1+tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,cfg_co2.csv_delimiter, history_co2[history_co2_len - 1 - web_conn->udata_start]);
-		if(++web_conn->udata_start >= history_co2_len) { // end
+				1900+tm.tm_year, 1+tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,cfg_co2.csv_delimiter, co2);
+		if(--web_conn->udata_start == 0) { // end
 			ClrSCB(SCB_RETRYCB);
 			return;
 		}
+		web_conn->udata_stop -= average_period;
 	}
 	// repeat in the next call ...
 	SetSCB(SCB_RETRYCB);
@@ -1309,6 +1320,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         		if(idx < cfg_co2.fans) tcp_puts("%d", cfg_fans[idx].speed_current);
         	}
         }
+        else ifcmp("history_addr") tcp_puts("0x%x", (uint32)history_co2);
         else ifcmp("fans_xml") {
 	    	web_conn->udata_start = 0;
 	    	web_conn->udata_stop = cfg_co2.fans;

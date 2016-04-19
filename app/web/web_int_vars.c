@@ -393,7 +393,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 		        	}
 		    		if(f->speed_current < f->speed_min) f->speed_current = f->speed_min;
 		    		if(f->speed_current > f->speed_max) f->speed_current = f->speed_max;
-		    		send_fans_speed_now(!(f->flags & (1<<FAN_SPEED_FORCED_BIT)));
+		    		send_fans_speed_now(Web_cfg_fan_, !(f->flags & (1<<FAN_SPEED_FORCED_BIT)));
 		        }
 	        }
 	        else ifcmp("day") f->speed_day = val;

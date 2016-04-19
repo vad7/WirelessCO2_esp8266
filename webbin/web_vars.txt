@@ -76,6 +76,7 @@ xml_ram
 inc:menu.inc
 sys_rdec0x4027F008
 sntp_time
+history_addr
 sys_vdd33
 sys_adc
 sys_vdd
