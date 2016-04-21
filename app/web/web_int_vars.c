@@ -340,7 +340,8 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 	        else ifcmp("addr_LSB") cfg_co2.address_LSB = val;
 	        else ifcmp("fans") {
 	        	cstr += 4;
-	        	ifcmp("_speed_th") str_array_w(pvar, cfg_co2.fan_speed_threshold, FAN_SPEED_MAX);
+	        	ifcmp("_speed_th") str_array_w(pvar, cfg_co2.fans_speed_threshold, FAN_SPEED_MAX);
+	        	else ifcmp("_speed_delta") cfg_co2.fans_speed_delta = val;
 	        	else cfg_co2.fans = val;
 	        }
 	        else ifcmp("night_") {

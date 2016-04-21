@@ -178,6 +178,9 @@ cfg_fan_day
 cfg_fan_night
 inc:footer.inc
 cfg_co2_fans
+cfg_fan_override_day
+cfg_fan_override_night
+cfg_fan_flags
 inc:menu0.inc
 cfg_vars_fans_speed_ov
 cfg_vars_receive_timeout
@@ -185,6 +188,7 @@ cfg_co2_rf_ch
 cfg_co2_addr_LSB
 cfg_co2_fans
 cfg_co2_fans_speed_th
+cfg_co2_fans_speed_delta
 cfg_co2_night_start
 cfg_co2_night_end
 cfg_co2_night_start_wd

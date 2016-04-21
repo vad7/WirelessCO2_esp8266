@@ -78,10 +78,10 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(uint8 nfan)
 	average /= CO2LevelAverageArrayLength;
 	int8_t fanspeed;
 	for(fanspeed = 0; fanspeed < FAN_SPEED_MAX; fanspeed++) {
-		uint16_t tr = cfg_co2.fan_speed_threshold[fanspeed];
+		uint16_t tr = cfg_co2.fans_speed_threshold[fanspeed];
 		if(average < tr) {
 			// if there is a decrease of CO2 level - check delta
-			if(fan_speed_previous <= fanspeed || (tr - average) >= cfg_co2.fan_speed_delta) break;
+			if(fan_speed_previous <= fanspeed || (tr - average) >= cfg_co2.fans_speed_delta) break;
 		}
 	}
 	fan_speed_previous = fanspeed;
@@ -178,7 +178,6 @@ xStartSending:
 			if(--receive_timeout == 0) goto xStartSending;
 		}
 	} else if(CO2_work_flag == 2) { // send
-xRepeat:
 		if(cfg_co2.fans == 0) goto xNextFAN; // skip
 		CFG_FAN *f = &cfg_fans[CO2_send_fan_idx];
 		if(CO2_send_flag == 0) { // start
@@ -186,6 +185,7 @@ xRepeat:
 			NRF24_SetMode(NRF24_TransmitMode);
 			set_new_rf_channel(f->rf_channel);
 			if(NRF24_SetAddresses(f->address_LSB)) {
+xResend:
 				co2_send_data.FanSpeed = f->speed_current;
 				NRF24_Transmit((uint8 *)&co2_send_data);
 				CO2_send_flag = 1;
@@ -208,9 +208,7 @@ xRepeat:
 				}
 				//dump_NRF_registers();
 				if(CO2_send_flag == 2) { // need repeat
-					CO2_send_flag = 0;
-					CO2_send_fan_idx = 0;
-					goto xRepeat;
+					goto xResend;
 				}
 xNextFAN:
 				if(++CO2_send_fan_idx >= cfg_co2.fans) CO2_work_flag = 0;
@@ -244,12 +242,12 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		cfg_co2.sensor_rf_channel = 2;
 		cfg_co2.address_LSB = 0xC0;
 		cfg_co2.fans = 0;
-		cfg_co2.fan_speed_threshold[0] = 500;
-		cfg_co2.fan_speed_threshold[1] = 550;
-		cfg_co2.fan_speed_threshold[2] = 600;
-		cfg_co2.fan_speed_threshold[3] = 800;
-		cfg_co2.fan_speed_threshold[4] = 900;
-		cfg_co2.fan_speed_threshold[5] = 1100;
+		cfg_co2.fans_speed_threshold[0] = 500;
+		cfg_co2.fans_speed_threshold[1] = 550;
+		cfg_co2.fans_speed_threshold[2] = 600;
+		cfg_co2.fans_speed_threshold[3] = 800;
+		cfg_co2.fans_speed_threshold[4] = 900;
+		cfg_co2.fans_speed_threshold[5] = 1100;
 	}
 	if(cfg_co2.history_size <= 2) cfg_co2.history_size = 8192; // bytes
 	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) <= 0) {

@@ -10,14 +10,16 @@
 <h2 class="title"><span style="font-weight:normal">CO<small><sub>2</sub></small>:</span>&nbsp;&nbsp;<span id="co2">~CO2_current~</span>&nbsp;<span style="font-weight:normal"><small>ppm</small></span></h2>
 <p class="center">
 <span id="time_co2">~CO2_last_time~</span>
+<p id="now_night"></p>
 </p>
-<p id="now_night" align="right"></p>
 <table id="fans" class="mdbtab">
 	<tr><th>№</th><th>Место</th><th>Скорость</th><th>Отправлена</th><th colspan="3">Корректировка</th></tr>
 </table>
-Корректировать: Скорость:&nbsp;<input title="-6..6" id="cfg_vars_fans_speed_ov" maxlength="2" size="3" value="~cfg_vars_fans_speed_ov~">&nbsp;&nbsp;
-Ночь: <input type="checkbox" id="now_night_ov">
-<button type="button" onclick="SetOnChange()">установить</button>
+<br>
+<form method="post">
+Корректировать: Скорость:&nbsp;<input title="-6..6" name="cfg_vars_fans_speed_ov" maxlength="2" size="3" value="~cfg_vars_fans_speed_ov~">&nbsp;&nbsp;
+Ночь: <input type="radio" name="now_night_ov" value="0">---<input type="radio" name="now_night_ov" value="1"> да<input type="radio" name="now_night_ov" value="2"> нет&nbsp;
+<button type="submit" class="button">установить</button>
 <br>
 <br>
 Текущее время: <span id="time_sntp">~sntp_time~</span>&nbsp;(~sntp_status~)<br>
@@ -28,9 +30,6 @@
 ~inc:vdd.inc~
 ~inc:time.inc~
 <script type="text/javascript">
-function SetOnChange() {
-	newAJAXCommand('?now_night='+(document.getElementById('now_night_ov').checked ? '1':'0') + '&cfg_vars_fans_speed_ov='+document.getElementById('cfg_vars_fans_speed_ov').value);
-}
 function CreateTable() {
 	for(var i = 0; i < ~cfg_co2_fans~; i++){
 		r=document.all.fans.insertRow(-1);
@@ -48,7 +47,13 @@ function updateStatus(xmlData) {
 	if(!xmlData) return;
 	var total = getXMLValue(xmlData, 'total');
 	document.getElementById('now_night').innerHTML = getXMLValue(xmlData, 'night') == '1' ? '* ночь * ' : '';
-	document.getElementById('co2').innerHTML = getXMLValue(xmlData, 'co2');
+	var co2 = Number(getXMLValue(xmlData, 'co2'));
+	var f = document.getElementById('co2');
+	f.innerHTML = co2;
+	if(co2 <= 500) f.style.color = 'green';
+	else if(co2 <= 700) f.style.color = 'black';
+	else if(co2 <= 900) f.style.color = 'yellow';
+	else f.style.color = 'red';
 	document.getElementById('time_co2').innerHTML = getXMLValue(xmlData, 'time_co2');
 	document.getElementById('time_sntp').innerHTML = getXMLValue(xmlData, 'time_sntp');
 	for(i = 0; i < total; i++){
@@ -66,6 +71,9 @@ function updateStatus(xmlData) {
 	nextimeout = ~cfg_co2_refresh_t~;
 }
 if(~cfg_co2_fans~ == "0") document.all.fans.hidden = true;
-document.getElementById('now_night_ov').checked = ~now_night_override~ == '1' ? true : false;
+var f = document.getElementsByName("now_night_ov");
+for(var i=0; i<f.length; i++){
+	if(f[i].value == "~now_night_override~") f[i].checked = true;
+}
 </script>
 </body></html>

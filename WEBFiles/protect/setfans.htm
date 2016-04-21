@@ -42,11 +42,7 @@
 						<option value='0'>No</option>
 						<option value='1'>=Day speed</option>
 						<option value='2'>+Day speed</option>
-					</select></td>
-				</tr>
-				<tr>
-					<td class="label">Day speed / delta:</td>
-					<td><input title='0..6' name='cfg_fan_day' maxlength='4' value='~cfg_fan_day~'></td>
+					</select>&nbsp;&nbsp;<input title='0..6' name='cfg_fan_day' size='5' maxlength='4' value='~cfg_fan_day~'></td>
 				</tr>
 				<tr>
 					<td class="label">Override at night:</td>
@@ -54,17 +50,14 @@
 						<option value='0'>No</option>
 						<option value='1'>=Night speed</option>
 						<option value='2'>+Night speed</option>
-					</select></td>
-				</tr>
-				<tr>
-					<td class="label">Night speed / delta:</td>
-					<td><input title='0..6' name='cfg_fan_night' maxlength='4' value='~cfg_fan_night~'></td>
+					</select>&nbsp;&nbsp;<input title='0..6' name='cfg_fan_night' size='5' maxlength='4' value='~cfg_fan_night~'></td>
 				</tr>
 				<tr>
 					<td class="label">Flags:</td>
 					<td><select name='cfg_fan_flags'>
 						<option value='0'>-</option>
 						<option value='1'>Skip fan</option>
+						<option value='2'>Speed overrided</option>
 					</select></td>
 				</tr>
  			</table>
@@ -77,16 +70,6 @@
 ~inc:footer.inc~
 <script src="cookie.js"></script>
 <script type="text/javascript">
-var f = document.getElementById("cfg_fan_");
-var sel = getCookie("cfg_fan_");
-for(var i=0; i < ~cfg_co2_fans~; i++) {
-	var o = document.createElement("option");
-	o.text = i+1;
-	o.value = i;
-	if(o.value == sel) o.selected = true;
-	f.add(o);
-}
-setFormCheckBoxes(document.forms[0]);
 function SubmitFunction() {
 	var inputs = document.forms[0].getElementsByTagName('input');
 	for(var i=0; i<inputs.length; i++){
@@ -101,13 +84,26 @@ function SubmitFunction() {
 		}
 	}
 }
-var val = getCookie("cfg_fan_");
-if (val == null) {
-	SetCookie("cfg_fan_", "0");
-}
 function ShowNewFan() {
 	setCookie("cfg_fan_", document.getElementById("cfg_fan_").value);
 	location.assign(location.pathname);
 }
+var f = document.getElementById("cfg_fan_");
+var sel = getCookie("cfg_fan_");
+for(var i=0; i < ~cfg_co2_fans~; i++) {
+	var o = document.createElement("option");
+	o.text = i+1;
+	o.value = i;
+	if(o.value == sel) o.selected = true;
+	f.add(o);
+}
+var val = getCookie("cfg_fan_");
+if (val == null) {
+	SetCookie("cfg_fan_", "0");
+}
+document.getElementsByName("cfg_fan_override_day")[0].selectedIndex = ~cfg_fan_override_day~;
+document.getElementsByName("cfg_fan_override_night")[0].selectedIndex = ~cfg_fan_override_night~;
+document.getElementsByName("cfg_fan_flags")[0].selectedIndex = ~cfg_fan_flags~;
+setFormCheckBoxes(document.forms[0]);
 </script>
 </body></html>

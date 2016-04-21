@@ -833,8 +833,9 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 		        	cstr += 4;
 		        	ifcmp("_speed_th") {
 						int16_t i;
-						for(i = 0; i < FAN_SPEED_MAX; i++) tcp_puts("%u%s", cfg_co2.fan_speed_threshold[i], i < FAN_SPEED_MAX-1 ? "," : "");
+						for(i = 0; i < FAN_SPEED_MAX; i++) tcp_puts("%u%s", cfg_co2.fans_speed_threshold[i], i < FAN_SPEED_MAX-1 ? "," : "");
 					}
+			        else ifcmp("_speed_delta") tcp_puts("%u", cfg_co2.fans_speed_delta);
 		        	else tcp_puts("%d", cfg_co2.fans);
 		        }
 		        else ifcmp("night_") {

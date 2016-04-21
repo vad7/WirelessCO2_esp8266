@@ -8,8 +8,8 @@
 #define FAN_SPEED_MAX	6
 
 typedef struct __attribute__((packed)) {
-	uint16	fan_speed_threshold[FAN_SPEED_MAX]; //  Fan speed: CO2 < 500 ppm = 0; < 550 ppm = 1; < 600 ppm = 2; < 800 ppm = 3; < 900 ppm = 4; < 1100 ppm = 5; > = 6 (max)
-	uint16	fan_speed_delta;		// delta CO2 for lowering speed, ppm
+	uint16	fans_speed_threshold[FAN_SPEED_MAX]; //  Fan speed: CO2 < 500 ppm = 0; < 550 ppm = 1; < 600 ppm = 2; < 800 ppm = 3; < 900 ppm = 4; < 1100 ppm = 5; > = 6 (max)
+	uint16	fans_speed_delta;		// delta CO2 for lowering speed, ppm
 	uint16	night_start;			// hh,mm
 	uint16	night_end;				// hh,mm
 	uint16	night_start_wd;			// hh,mm at weekend
