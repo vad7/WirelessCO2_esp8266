@@ -4,6 +4,8 @@
  *
 */
 
+#ifdef DEBUG_TO_RAM
+
 #include "c_types.h"
 
 #define DEBUG_RAM_BUF_MAX	32768
@@ -16,3 +18,7 @@ void ICACHE_FLASH_ATTR dbg_printf_out(char c);
 void ICACHE_FLASH_ATTR dbg_printf(const char *format, ...);
 void ICACHE_FLASH_ATTR dbg_set(uint8 level, uint32 size);
 void ICACHE_FLASH_ATTR dbg_tcp_send(void * ts_conn);
+
+#else
+#define dbg_printf(...)
+#endif

@@ -4,6 +4,8 @@
  *
 */
 
+#ifdef DEBUG_TO_RAM
+
 #include "debug_ram.h"
 #include "bios/ets.h"
 #include "sdk/mem_manager.h"
@@ -42,6 +44,7 @@ void ICACHE_FLASH_ATTR dbg_set(uint8 level, uint32 size)
 			os_free(Debug_RAM_addr);
 			Debug_RAM_addr = NULL;
 			Debug_RAM_len = 0;
+			system_set_os_print(0);
 //			system_set_os_print(Save_system_set_os_print);
 		}
 		if(size) Debug_RAM_size = size;
@@ -82,3 +85,4 @@ void ICACHE_FLASH_ATTR dbg_tcp_send(void * ts_conn)
 	}
 	ClrSCB(SCB_RETRYCB);
 }
+#endif

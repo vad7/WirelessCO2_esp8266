@@ -4,8 +4,9 @@
 <title>Вентиляция</title>
 <link rel="stylesheet" href="/style.css">
 <script src="/site.js"></script>
+<script src="/cookies.js"></script>
 </head><body onload="CreateTable()">
-~inc:menu0.inc~
+~inc:menumain.inc~
 <div class="content">
 <h2 class="title"><span style="font-weight:normal">CO<small><sub>2</sub></small>:</span>&nbsp;&nbsp;<span id="co2">~CO2_current~</span>&nbsp;<span style="font-weight:normal"><small>ppm</small></span></h2>
 <p class="center">
@@ -13,7 +14,7 @@
 <p id="now_night"></p>
 </p>
 <table id="fans" class="mdbtab">
-	<tr><th>№</th><th>Место</th><th>Скорость</th><th>Отправлена</th><th colspan="3">Корректировка</th></tr>
+	<tr><th>№</th><th>Место</th><th>Скорость</th><th>Отправлена</th><th colspan="3" width="36%">Корректировка на &nbsp;<input title="0 - неограничено" id="fsp_time" size="3" maxlength="5" onchange="updCookie('fsp_time')">&nbsp; мин.</th></tr>
 </table>
 <br>
 <form method="post">
@@ -37,9 +38,9 @@ function CreateTable() {
 		r.insertCell(1);
 		r.insertCell(2);
 		r.insertCell(3);
-		c=r.insertCell(4);c.innerHTML="+";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=p")};c.className='s';
-		c=r.insertCell(5);c.innerHTML="-";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=m")};c.className='s';
-		c=r.insertCell(6);c.innerHTML="*";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=c")};c.className='s';
+		c=r.insertCell(4);c.innerHTML="+";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=p"+getCookie('fsp_time'))};c.className='s';
+		c=r.insertCell(5);c.innerHTML="-";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=m"+getCookie('fsp_time'))};c.className='s';
+		c=r.insertCell(6);c.innerHTML="*";c.idx=i;c.onclick=function(){newAJAXCommand("?cfg_fan_="+this.idx+"&cfg_fan_override=c0")};c.className='s';
 	}
 	newAJAXCommand('fans.xml', updateStatus, true);
 }
@@ -52,7 +53,7 @@ function updateStatus(xmlData) {
 	f.innerHTML = co2;
 	if(co2 <= 500) f.style.color = 'green';
 	else if(co2 <= 700) f.style.color = 'black';
-	else if(co2 <= 900) f.style.color = 'yellow';
+	else if(co2 <= 900) f.style.color = 'darkorange';
 	else f.style.color = 'red';
 	document.getElementById('time_co2').innerHTML = getXMLValue(xmlData, 'time_co2');
 	document.getElementById('time_sntp').innerHTML = getXMLValue(xmlData, 'time_sntp');
@@ -60,9 +61,15 @@ function updateStatus(xmlData) {
 		var r = document.all.fans.rows[i+1];
 		var f = xmlData.getElementsByTagName('fan')[i];
 		r.cells[1].innerHTML = getXMLValue(f, 'name');
-		if(getXMLValue(f, 'fl') & 1) r.cells[1].style.color = 'gray';
+		var fl = getXMLValue(f, 'fl');
+		if(fl & 1) r.cells[1].style.color = 'gray';
 		r.cells[2].innerHTML = getXMLValue(f, 'spc');
-		r.cells[2].style.color = (getXMLValue(f, 'fl') & 2) ? 'red' : '';
+		r.cells[2].style.color = (fl & 2) ? 'red' : '';
+		if(fl & 2) {
+		    var n = Number(getXMLValue(f, 'fspt'));
+			if(n == 0) r.title = 'Безвременная корректировка...';
+			else r.cells[2].title = 'Корректировка закончится через ' + Math.round(n / 60) + ' мин.';
+		}
 		var du = getXMLValue(f, 'ttm') * 1000; d = new Date(du);
 		r.cells[3].innerHTML = du == 0 ? '---' : d.toTimeString().substr(0,8);
 		r.cells[3].style.color = (getXMLValue(f, 'tst') > 1) ? 'red' : '';
@@ -75,5 +82,6 @@ var f = document.getElementsByName("now_night_ov");
 for(var i=0; i<f.length; i++){
 	if(f[i].value == "~now_night_override~") f[i].checked = true;
 }
+setCookieElem("fsp_time", 180);
 </script>
 </body></html>

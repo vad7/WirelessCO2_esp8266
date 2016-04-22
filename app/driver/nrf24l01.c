@@ -100,7 +100,6 @@ void ICACHE_FLASH_ATTR NRF24_SetMode(uint8_t mode)
 	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_CONFIG, NRF24_CONFIG | (1<<NRF24_BIT_PWR_UP) | mode);
 	if(mode & NRF24_ReceiveMode) { // Receive mode
 		//NRF24_SendCommand(NRF24_CMD_FLUSH_RX);
-		NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
 #ifdef NRF24_CE_GPIO
 		NRF24_SET_CE_HI; // start receiving
 #endif
@@ -114,8 +113,8 @@ uint8_t ICACHE_FLASH_ATTR NRF24_Receive(uint8_t *payload)
 	if((st = NRF24_SendCommand(NRF24_CMD_NOP)) & (1<<NRF24_BIT_RX_DR))
 	{
 		NRF24_ReadArray(NRF24_CMD_R_RX_PAYLOAD, payload, NRF24_PAYLOAD_LEN);
-		NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
 		pipe = ((st >> NRF24_BIT_RX_P_NO) & 0b111) + 1;
+		NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR)); // Clear RX status
 	}
 	return pipe;
 }
@@ -142,13 +141,14 @@ void NRF24_timer_handler(void)
 void ICACHE_FLASH_ATTR NRF24_Transmit(uint8_t *payload)
 {
 	NRF24_SendCommand(NRF24_CMD_FLUSH_TX);
-	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_RX_DR) | (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // clear status
+	NRF24_WriteByte(NRF24_CMD_W_REGISTER | NRF24_REG_STATUS, (1<<NRF24_BIT_TX_DS) | (1<<NRF24_BIT_MAX_RT)); // Clear TX status
 	NRF24_WriteArray(NRF24_CMD_W_TX_PAYLOAD, payload, NRF24_PAYLOAD_LEN);
 #ifdef NRF24_CE_GPIO
 	NRF24_SET_CE_HI; // Start transmission
 #endif
 	NRF24_transmit_status = NRF24_Transmitting;
 	NRF24_transmit_cnt = 50; // ms
+	ets_timer_disarm(&NRF24_timer);
 	os_timer_setfn(&NRF24_timer, (os_timer_func_t *)NRF24_timer_handler, NULL);
 	ets_timer_arm_new(&NRF24_timer, 1, 1, 1); // 1 ms, repeat
 }

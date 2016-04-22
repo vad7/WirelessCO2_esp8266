@@ -129,7 +129,7 @@ err_t ICACHE_FLASH_ATTR tc_recv(TCP_SERV_CONN *ts_conn) {
 }
 
 // replace ~x~ in buf with calculated web_int_callback(x) and put buf to web_conn.msgbuf
-void tc_parse_buf(TCP_SERV_CONN *ts_conn, uint8 *buf, int32_t len)
+void ICACHE_FLASH_ATTR  tc_parse_buf(TCP_SERV_CONN *ts_conn, uint8 *buf, int32_t len)
 {
 	WEB_SRV_CONN *web_conn = (WEB_SRV_CONN *)ts_conn->linkd;
 	while(len > 0) {

@@ -127,6 +127,12 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(uint8 nfan)
 
 void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 {
+	uint8 fan;
+	for(fan = 0; fan < cfg_co2.fans; fan++) {
+		if(cfg_fans[fan].flags & (1<<FAN_SPEED_FORCED_BIT)) {
+			if(cfg_fans[fan].forced_speed_timeout) if(--cfg_fans[fan].forced_speed_timeout == 0) cfg_fans[fan].flags &= ~(1<<FAN_SPEED_FORCED_BIT);
+		}
+	}
 	if(CO2_work_flag == 0) { // init
 		set_new_rf_channel(cfg_co2.sensor_rf_channel);
 		if(NRF24_SetAddresses(cfg_co2.address_LSB)) {
@@ -149,23 +155,29 @@ void ICACHE_FLASH_ATTR user_loop(void) // call every 1 sec
 				else average_period = (average_period + d) / 2;
 			}
 			if(history_co2 != NULL) { // store history co2
-				uint32 idx = history_co2_len * 15;
+				uint32 idx = history_co2_pos * 15;
 				uint8  idxt = idx % 10;
 				idx /= 10;
-				if(idx >= cfg_co2.history_size - 2) {
-					os_memmove(history_co2, history_co2 + 3, cfg_co2.history_size - 3);
-					history_co2_len -= 2;
-				}
+				if(idx >= cfg_co2.history_size - 2) { // (history_co2_size / 1.5 - 1) * 1.5
+					history_co2_full = 1;
+					history_co2_pos = 0;
+				} else history_co2_pos++;
 				// MSB(32 13 21 ...)
 				if(idxt) history_co2[idx] = ((co2_send_data.CO2level & 0xF00) >> 8) | (history_co2[idx] & 0xF0);
 				else history_co2[idx] = (co2_send_data.CO2level & 0xFF0) >> 4;
 				if(idxt) history_co2[idx+1] = co2_send_data.CO2level & 0x0FF;
 				else history_co2[idx+1] = (co2_send_data.CO2level & 0x00F) << 4;
-				history_co2_len++;
 			}
 			CO2_last_time = t;
 			#if DEBUGSOO > 4
 				os_printf("NRF Received at %u, CO2: %u, F: %d (%d)\n", CO2_last_time, co2_send_data.CO2level, co2_send_data.FanSpeed, co2_send_data.Flags);
+			#endif
+			#ifdef DEBUG_TO_RAM
+				if(Debug_RAM_addr != NULL && co2_send_data.CO2level > 1100) {
+					struct tm tm;
+					_localtime(&CO2_last_time, &tm);
+					dbg_printf("%d.%d %d:%d:%d=%u\n", tm.tm_mday, 1+tm.tm_mon, tm.tm_hour, tm.tm_min, tm.tm_sec, co2_send_data.CO2level);
+				}
 			#endif
 			NRF24_Standby();
 			CO2_set_fans_speed_current(255);
@@ -185,7 +197,6 @@ xStartSending:
 			NRF24_SetMode(NRF24_TransmitMode);
 			set_new_rf_channel(f->rf_channel);
 			if(NRF24_SetAddresses(f->address_LSB)) {
-xResend:
 				co2_send_data.FanSpeed = f->speed_current;
 				NRF24_Transmit((uint8 *)&co2_send_data);
 				CO2_send_flag = 1;
@@ -207,9 +218,6 @@ xResend:
 					f->transmit_ok_last_time = get_sntp_localtime();
 				}
 				//dump_NRF_registers();
-				if(CO2_send_flag == 2) { // need repeat
-					goto xResend;
-				}
 xNextFAN:
 				if(++CO2_send_fan_idx >= cfg_co2.fans) CO2_work_flag = 0;
 				CO2_send_flag = 0;
@@ -223,13 +231,10 @@ void  ICACHE_FLASH_ATTR send_fans_speed_now(uint8 fan, uint8 calc_speed)
 {
 	//dump_NRF_registers();
 	if(calc_speed) CO2_set_fans_speed_current(fan);
-	if(CO2_work_flag == 2 && CO2_send_flag == 1) {
-		CO2_send_flag = 2; // if now sending - repeat
-	} else {
-		CO2_work_flag = 2;
-		CO2_send_flag = 0;
-		CO2_send_fan_idx = 0;
-	}
+	CO2_send_fan_idx = fan;
+	CO2_work_flag = 2;
+	CO2_send_flag = 0;
+	NRF24_Standby();
 }
 
 void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
@@ -249,8 +254,8 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 		cfg_co2.fans_speed_threshold[4] = 900;
 		cfg_co2.fans_speed_threshold[5] = 1100;
 	}
-	if(cfg_co2.history_size <= 2) cfg_co2.history_size = 8192; // bytes
-	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) <= 0) {
+	if(cfg_co2.history_size <= 9) cfg_co2.history_size = 9999; // bytes
+	if(flash_read_cfg(&cfg_fans, ID_CFG_FANS, sizeof(cfg_fans)) != sizeof(cfg_fans)) {
 		os_memset(&cfg_fans, 0, sizeof(cfg_fans));
 	}
 	uint8 i;
@@ -267,7 +272,10 @@ void ICACHE_FLASH_ATTR wireless_co2_init(uint8 index)
 	ets_timer_arm_new(&user_loop_timer, 1000, 1, 1); // 1s, repeat
 	NRF24_init(); // After init transmit must be delayed
 	iot_cloud_init();
-	if(history_co2 == NULL) history_co2 = os_malloc(cfg_co2.history_size);
+	if(history_co2 == NULL) {
+		history_co2 = os_malloc(cfg_co2.history_size);
+		history_co2_full = 0;
+	}
 	//dump_NRF_registers();
 
 //	#if DEBUGSOO > 4

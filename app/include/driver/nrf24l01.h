@@ -136,3 +136,4 @@ uint8_t NRF24_SetAddresses(uint8_t addr_LSB) ICACHE_FLASH_ATTR; // Set addresses
 void NRF24_init(void) ICACHE_FLASH_ATTR; // After init transmit must be delayed
 #define NRF24_Standby() NRF24_SET_CE_LOW
 //void NRF24_Powerdown(void) ICACHE_FLASH_ATTR;
+

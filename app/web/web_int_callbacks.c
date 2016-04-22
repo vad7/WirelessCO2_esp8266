@@ -154,10 +154,10 @@ void ICACHE_FLASH_ATTR web_fans_xml(TCP_SERV_CONN *ts_conn)
 		web_conn->msgbuflen += htmlcode(&web_conn->msgbuf[web_conn->msgbuflen], f->name, sizeof(f->name) * 6, sizeof(f->name));
 		tcp_puts_fd("</name><fl>%u</fl>"
 				//"<rf>%d</rf><addr>%d</addr><ovd>%d</ovd><ovn>%d</ovn><spmax>%d</spmax><spmin>%d</spmin><spd>%d</spd><spn>%d</spn>"
-				"<spc>%d</spc><tst>%d</tst><ttm>%u</ttm></fan>\n",
+				"<fspt>%u</fspt><spc>%d</spc><tst>%d</tst><ttm>%u</ttm></fan>\n",
 			f->flags,
 			//f->rf_channel, f->address_LSB, f->override_day, f->override_night, f->speed_max, f->speed_min, f->speed_day, f->speed_night,
-			f->speed_current, f->transmit_last_status, sntp_local_to_UTC_time(f->transmit_ok_last_time));
+			f->forced_speed_timeout, f->speed_current, f->transmit_last_status, sntp_local_to_UTC_time(f->transmit_ok_last_time));
 		if(++web_conn->udata_start >= web_conn->udata_stop) {
 			ClrSCB(SCB_RETRYCB);
 			return;
@@ -176,21 +176,16 @@ void ICACHE_FLASH_ATTR web_get_history(TCP_SERV_CONN *ts_conn)
     WEB_SRV_CONN *web_conn = (WEB_SRV_CONN *)ts_conn->linkd;
     if(CheckSCB(SCB_RETRYCB)==0) {// Check if this is a first round call
 		tcp_puts("date,value\r\n"); // csv header
-    	if(history_co2_len == 0 || history_co2 == NULL || average_period == 0) return; // empty
-		web_conn->udata_start = history_co2_len - 1; // start idx
+    	if(history_co2 == NULL || (history_co2_pos == 0 && !history_co2_full) || average_period == 0) return; // empty
+		web_conn->udata_start = history_co2_pos - 1; // start idx
 		web_conn->udata_stop = CO2_last_time;
 #if DEBUGSOO > 2
 		os_printf("Output History: ");
 #endif
+    } else if(web_conn->udata_stop == history_co2_pos) { // pos changed
+		ClrSCB(SCB_RETRYCB);
+		return;
     }
-//    if(memory moved) {
-//    	if(web_conn->udata_start == 0) { // end
-//    		ClrSCB(SCB_RETRYCB);
-//    		return;
-//    	}
-//    	web_conn->udata_start -= 2;
-//    	web_conn->udata_stop = CO2_last_time;
-//    }
 	while(web_conn->msgbuflen + 50 <= web_conn->msgbufsize) { // +max string size
 		struct tm tm;
 	    time_t time = web_conn->udata_stop;
@@ -206,7 +201,16 @@ void ICACHE_FLASH_ATTR web_get_history(TCP_SERV_CONN *ts_conn)
 		else co2 |= history_co2[idx+1] >> 4;
 		tcp_puts("%04d-%02d-%02d %02d:%02d:%02d%c%d\r\n",
 				1900+tm.tm_year, 1+tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,cfg_co2.csv_delimiter, co2);
-		if(--web_conn->udata_start == 0) { // end
+		if(web_conn->udata_start == 0) {
+			if(history_co2_full) {
+				web_conn->udata_start = cfg_co2.history_size * 10 / 15;
+			} else { // end
+				ClrSCB(SCB_RETRYCB);
+				return;
+			}
+		}
+    	web_conn->udata_start--;
+		if(history_co2_full && web_conn->udata_start == history_co2_pos) { // end
 			ClrSCB(SCB_RETRYCB);
 			return;
 		}
@@ -1311,6 +1315,8 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         	cstr += 4;
         	ifcmp("current") tcp_puts("%u", co2_send_data.CO2level);
         	else ifcmp("last_time") tcp_puts("%u", sntp_local_to_UTC_time(CO2_last_time));
+        	else ifcmp("r_flags") tcp_puts("%u", co2_send_data.Flags);
+        	else ifcmp("r_speed") tcp_puts("%u", co2_send_data.FanSpeed);
         }
         else ifcmp("now_night_override") tcp_puts("%d", now_night_override);
         else ifcmp("now_night") tcp_puts("%d", now_night);
@@ -1328,6 +1334,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
 	    	web_conn->udata_stop = cfg_co2.fans;
 	    	web_fans_xml(ts_conn);
         }
+#ifdef DEBUG_TO_RAM
         else ifcmp("dbg_") { // debug to RAM
         	cstr += 4;
         	ifcmp("enable") tcp_puts("%d", Debug_level);
@@ -1336,6 +1343,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         	else ifcmp("len") tcp_puts("%u", Debug_RAM_len);
         	else ifcmp("ram") dbg_tcp_send(ts_conn);
         }
+#endif
 //
 		else tcp_put('?');
 }

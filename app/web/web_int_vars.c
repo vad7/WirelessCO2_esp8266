@@ -360,11 +360,13 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 	        }
 	        else ifcmp("refresh_t") cfg_co2.page_refresh_time = val;
 	        else ifcmp("history_size") {
+	        	val = (val / 3) * 3;
 	        	if(cfg_co2.history_size != val) {
 	        		os_free(history_co2);
 		        	cfg_co2.history_size = val;
 					history_co2 = os_malloc(cfg_co2.history_size);
-					history_co2_len = 0;
+					history_co2_pos = 0;
+					history_co2_full = 0;
 	        	}
 	        }
 //			else ifcmp("reset_data") {
@@ -402,6 +404,7 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
 		        	}
 		    		if(f->speed_current < f->speed_min) f->speed_current = f->speed_min;
 		    		if(f->speed_current > f->speed_max) f->speed_current = f->speed_max;
+		    		if(1<<FAN_SPEED_FORCED_BIT) f->forced_speed_timeout = ahextoul(pvar + 1) * 60;
 		    		send_fans_speed_now(Web_cfg_fan_, !(f->flags & (1<<FAN_SPEED_FORCED_BIT)));
 		        }
 	        }
@@ -748,11 +751,13 @@ void ICACHE_FLASH_ATTR web_int_vars(TCP_SERV_CONN *ts_conn, uint8 *pcmd, uint8 *
     		};
     	}
     }
+#ifdef DEBUG_TO_RAM
     else ifcmp("dbg_") {  // debug to RAM
     	cstr += 4;
     	ifcmp("enable") dbg_set(val, 0);
     	else ifcmp("size") if(val != Debug_RAM_size) dbg_set(0, val);
     }
+#endif
 #ifdef USE_RS485DRV
 	else ifcmp("rs485_") {
    		cstr+=6;

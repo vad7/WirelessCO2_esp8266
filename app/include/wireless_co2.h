@@ -4,8 +4,8 @@
 #include "sntp.h"
 #include "debug_ram.h"
 
-#define FANS_MAX 		10
-#define FAN_SPEED_MAX	6
+#define FANS_MAX 					10
+#define FAN_SPEED_MAX				6
 
 typedef struct __attribute__((packed)) {
 	uint16	fans_speed_threshold[FAN_SPEED_MAX]; //  Fan speed: CO2 < 500 ppm = 0; < 550 ppm = 1; < 600 ppm = 2; < 800 ppm = 3; < 900 ppm = 4; < 1100 ppm = 5; > = 6 (max)
@@ -21,7 +21,7 @@ typedef struct __attribute__((packed)) {
 	char	csv_delimiter; 			// ','
 	uint8	fans_speed_night_max;	// speed max at night
 	uint16	page_refresh_time;		// ms
-	uint16	history_size;			// CO2 store RAM buffer size
+	uint16	history_size;			// CO2 store RAM buffer size, must be divided by 3 without remains!
 //	char sntp_server[20];
 } CFG_CO2;
 CFG_CO2 __attribute__((aligned(4))) cfg_co2;
@@ -35,6 +35,7 @@ typedef enum
 typedef struct __attribute__((packed)) {
 	char name[16];
 	time_t transmit_ok_last_time;
+	uint32 forced_speed_timeout; // sec
 	uint8 transmit_last_status;	// NRF24_transmit_status
 	uint8 flags;				// CFG_FAN_FLAGS enum
 	uint8 rf_channel;
@@ -63,7 +64,8 @@ typedef struct __attribute__ ((packed)) {
 GLOBAL_VARS __attribute__((aligned(4))) global_vars;
 
 uint8  *history_co2;		// history buffer in the RAM
-uint16	history_co2_len;	// current length (by 2 byte)
+uint16	history_co2_pos;	// current pos (by 1.5 byte)
+uint8	history_co2_full;	// buffer full - overwriting old values
 uint16  average_period; 	// between receiving (sec), for charts
 
 time_t CO2_last_time;
