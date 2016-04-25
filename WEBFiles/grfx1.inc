@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html><head>
 	<meta http-equiv="Content-type" content="text/html; charset=windows-1251">
-	<title>ESP8266</title>
+	<title>Вентиляция</title>
 	<link rel="stylesheet" href="/style.css">
 </head>
 <body>
