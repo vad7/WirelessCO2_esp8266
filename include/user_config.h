@@ -77,9 +77,13 @@
 //#define USE_NETBIOS	1 // включить в трансялцию драйвер NETBIOS, если =0 - по умолчанию выключен.
 #define USE_SNTP	1 // включить в трансялцию драйвер SNTP, если =0 - по умолчанию выключен, = 1 - по умолчанию включен.
 //#define USE_GPIOs_intr
-//#define USE_UART1 // включить UART1 для отладки
+//#define USE_UART1  // включить UART1 для отладки
 //#define USE_OVERLAY 8192 // включить в трансляцию возможность работы с оверлеями (максимальный размер кода оверлея)
-#define I2C_FRAM_ID 0x50
+
+//#define USE_I2C 	     // драйвер I2C
+//#define I2C_FRAM_ID 0x50
+#define USE_HSPI	  // дрйвер  HSPI
+
 //#define DEBUG_TO_RAM
 #define UTC_OFFSET +3 // Moscow time
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

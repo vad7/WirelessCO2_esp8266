@@ -24,7 +24,8 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-
+#include "user_config.h"
+#ifdef USE_HSPI
 #include "hw/pin_mux_register.h"
 #include "driver/spi.h"
 #include "sdk/rom2ram.h"
@@ -443,4 +444,6 @@ uint32 spi_transaction(uint8 cmd_bits, uint16 cmd_data, uint32 addr_bits, uint32
 ////////////////////////////////////////////////////////////////////////////////
 
 #endif
+#endif
+
 #endif

@@ -28,7 +28,7 @@
 #include "sys_const_utils.h"
 #include "wifi_events.h"
 #include "../include/wireless_co2.h"
-#include "driver/i2c.h"
+#include "driver/eeprom.h"
 #include "time.h"
 #include "iot_cloud.h"
 

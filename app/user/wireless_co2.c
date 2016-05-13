@@ -7,7 +7,7 @@
 #include "flash_eep.h"
 #include "webfs.h"
 #include "sdk/libmain.h"
-#include "driver/i2c.h"
+#include "driver/eeprom.h"
 #include "hw/gpio_register.h"
 #include "wireless_co2.h"
 #include "iot_cloud.h"
