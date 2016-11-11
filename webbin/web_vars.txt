@@ -53,6 +53,7 @@ CO2_r_speed
 now_night
 iot_LastSt_time
 iot_LastSt
+mktime
 wifi_ap_ssid
 sys_webver
 sys_sdkver

@@ -65,8 +65,8 @@ void ICACHE_FLASH_ATTR CO2_Averaging(void)
 	if(CO2LevelAverageIdx == CO2LevelAverageArrayLength) { // First time
 		for(i = 1; i < CO2LevelAverageArrayLength; i++)	CO2LevelAverageArray[i] = co2_send_data.CO2level;
 	}
-	if(CO2LevelAverageIdx >= CO2LevelAverageArrayLength) CO2LevelAverageIdx = 0;
-	CO2LevelAverageArray[CO2LevelAverageIdx++] = co2_send_data.CO2level;
+	if(++CO2LevelAverageIdx >= CO2LevelAverageArrayLength) CO2LevelAverageIdx = 0;
+	CO2LevelAverageArray[CO2LevelAverageIdx] = co2_send_data.CO2level;
 }
 
 // fan = 255 - all

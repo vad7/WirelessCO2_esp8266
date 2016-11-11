@@ -1344,6 +1344,7 @@ void ICACHE_FLASH_ATTR web_int_callback(TCP_SERV_CONN *ts_conn, uint8 *cstr)
         	else ifcmp("ram") dbg_tcp_send(ts_conn);
         }
 #endif
+        else ifcmp("mktime") tcp_puts("%s %s", __DATE__, __TIME__); // make date time
 //
 		else tcp_put('?');
 }

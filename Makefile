@@ -217,6 +217,7 @@ endif
 #	@echo "Fullflash firmware.bin size  : " $(shell printf '%u\n' $$(stat --printf="%s" ../$(FIRMWAREDIR)/firmware.bin) )
 #	@echo "Max firmware.bin size for OTA: " $(shell printf '%u\n' $$((0x7B000 - (($$(stat --printf="%s" ../$(OUTBIN2)) + 0xFFF + $(ADDR_FW2)) & (0xFFFFF000)) )) )
 #	@echo "*Space available to allow OTA: " $(shell printf '%d\n' $$((0x7B000 - (($$(stat --printf="%s" ../$(OUTBIN2)) + 0xFFF + $(ADDR_FW2)) & (0xFFFFF000)) - $$(stat --printf="%s" ../$(FIRMWAREDIR)/firmware.bin) )) )
+	@rm -f web/.output/eagle/obj/web_int_callbacks.*
 
 all: .subdirs $(OBJS) $(OLIBS) $(SPECIAL_MKTARGETS) $(OIMAGES) $(OBINS) 
 
