@@ -7,6 +7,8 @@ Gathering information from [CO2 sensor with nRF24L01](http://we.easyelectronics.
 
 ![alt tag](https://github.com/vad7/WirelessCO2_esp8266/blob/master/main_screen.jpg)
 
+Подробно здесь: [http://vad-7.blogspot.ru/2016/04/esp8266.html]([http://vad-7.blogspot.ru/2016/04/esp8266.html])
+
 
 WiFi модуль esp8266 используется в качестве веб-сервера для беспроводного управления вентиляцией через nRF24L01+.
 Вот в эту <a href="http://we.easyelectronics.ru/smarthouse/dorabotka-provetrivatelya-ili-upravlenie-ventilyaciey-ot-datchika-uglekislogo-gaza.html">конструкцию</a> добавляется WiFi модуль, который выполняет роль "мозга" системы вентиляции.
