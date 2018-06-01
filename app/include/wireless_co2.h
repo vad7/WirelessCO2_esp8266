@@ -42,9 +42,9 @@ typedef struct __attribute__((packed)) {
 	uint8 address_LSB;
 	int8  speed_min;
 	int8  speed_max;
-	uint8 override_day;			// 0 - no, 1 - set =speed_override, 2 - set +speed_override
+	uint8 override_day;			// 0 - no, 1 - set =speed_day, 2 - set +speed_day, 3 - <= speed_day, 4 - >= speed_day
 	int8  speed_day;			// day
-	uint8 override_night;		// 0 - no, 1 - set =speed_night, 2 - set +speed_night
+	uint8 override_night;		// 0 - no, 1 - set =speed_night, 2 - set +speed_night, 3 - <= speed_night, 4 - >= speed_night
 	int8  speed_night;
 	uint8 speed_current;
 } CFG_FAN;

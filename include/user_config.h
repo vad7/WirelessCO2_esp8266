@@ -86,6 +86,7 @@
 
 //#define DEBUG_TO_RAM
 #define UTC_OFFSET +3 // Moscow time
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #endif // PROGECT_NAME
 

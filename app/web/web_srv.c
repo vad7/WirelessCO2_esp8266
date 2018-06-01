@@ -1084,16 +1084,16 @@ web_print_headers(HTTP_CONN *CurHTTP, TCP_SERV_CONN *ts_conn)
                     	}
                     };
                     // Output the cache-control + ContentLength
-                    if(CheckSCB(SCB_FCALBACK)) { // длина неизветсна
+                    if(CheckSCB(SCB_FCALBACK)) { // длина не известна
                     	// file is callback index
                     	tcp_strcpy_fd("Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n");
                     	if(CurHTTP->httpver >= 0x11) SetSCB(SCB_CHUNKED);
                     }
-                    else { // длина изветсна
+                    else { // длина известна
                     	tcp_puts_fd("%s %d\r\n", HTTPContentLength, web_conn->content_len);
                     	if(CurResp->status == 200 && (!isWEBFSLocked) && web_conn->bffiles[0] != WEBFS_WEBCGI_HANDLE) {
                     		// lifetime (sec) of static responses as string 60*60*24*14=1209600"
-                        	tcp_puts_fd("Cache-Control: smax-age=%d\r\n", FILE_CACHE_MAX_AGE_SEC);
+                        	tcp_puts_fd("Cache-Control: max-age=%d\r\n", FILE_CACHE_MAX_AGE_SEC);
                     	}
                     	else {
                     		tcp_strcpy_fd("Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n");
@@ -1261,6 +1261,7 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 	uint8 *pnext;
 	uint8 *pstr;
 	while(web_conn->content_len && ts_conn->pbufi != NULL) {
+		WDT_FEED = WDT_FEED_MAGIC; // WDT
 		pstr = ts_conn->pbufi;
 		len = ts_conn->sizei;
 #if DEBUGSOO > 4
@@ -1478,15 +1479,17 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 #endif
 				if(block_size) { // идут данные файла
 //					tcpsrv_unrecved_win(ts_conn); // для ускорения, пока стрирается-пишется уже обновит окно (включено в web_rx_buf)
-					if(pupload->faddr >= FLASH_MIN_SIZE && (pupload->status == 3 || pupload->status == 4)) { // WebFS or Flash
-						if((pupload->faddr & 0x0000FFFF)==0) {
-#if DEBUGSOO > 2
-							os_printf("Clear flash page addr %p... ", pupload->faddr);
-#endif
-							spi_flash_erase_block(pupload->faddr>>16);
-						}
-					}
-					else if((pupload->faddr & 0x00000FFF) == 0) {
+					ets_isr_mask((1<<ETS_GPIO_INUM) | (1<<ETS_UART_INUM)); // DISABLE interrupts!
+//					if(pupload->faddr >= FLASH_MIN_SIZE && (pupload->status == 3 || pupload->status == 4)) { // WebFS or Flash
+//						if((pupload->faddr & 0x0000FFFF)==0) {
+//#if DEBUGSOO > 2
+//							os_printf("Clear flash page addr %p... ", pupload->faddr);
+//#endif
+//							spi_flash_erase_block(pupload->faddr>>16);
+//						}
+//					}
+//					else 
+					if((pupload->faddr & 0x00000FFF) == 0) {
 #if DEBUGSOO > 2
 						os_printf("Clear flash sector addr %p... ", pupload->faddr);
 #endif
@@ -1496,6 +1499,7 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 					os_printf("Write flash addr:%p[0x%04x]\n", pupload->faddr, block_size);
 #endif
 					spi_flash_write(pupload->faddr, (uint32 *)pstr, (block_size + 3)&(~3));
+					ets_isr_unmask((1<<ETS_GPIO_INUM) | (1<<ETS_UART_INUM)); // Enable interrupts!
 
 					pupload->fsize -= block_size;
 					pupload->faddr += block_size;
@@ -1529,6 +1533,7 @@ LOCAL int ICACHE_FLASH_ATTR upload_boundary(TCP_SERV_CONN *ts_conn) // HTTP_UPLO
 					} else if(!isWEBFSLocked) { // WebFS OK
 						SetSCB(SCB_REDIR);
 						rom_xstrcpy(pupload->filename, disk_ok_filename); // os_memcpy(pupload->filename,"/disk_ok.htm\0",13);
+						//iot_cloud_init();
 					};
 					if(ret == 1) pupload->status = 0; // = 0 найден следующий boundary
 					if(ret == 200)	return ret;

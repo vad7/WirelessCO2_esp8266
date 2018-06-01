@@ -115,9 +115,13 @@ void ICACHE_FLASH_ATTR CO2_set_fans_speed_current(uint8 nfan)
 		if(night) {
 			if(f->override_night == 1) fsp = f->speed_night; // =
 			else if(f->override_night == 2) fsp += f->speed_night; // +
+			else if(f->override_night == 3 && fsp > f->speed_night) fsp = f->speed_night;
+			else if(f->override_night == 4 && fsp < f->speed_night) fsp = f->speed_night;
 		} else {
 			if(f->override_day == 1) fsp = f->speed_day; // =
 			else if(f->override_day == 2) fsp += f->speed_day; // +
+			else if(f->override_day == 3 && fsp > f->speed_day) fsp = f->speed_day;
+			else if(f->override_day == 4 && fsp < f->speed_day) fsp = f->speed_day;
 		}
 		if(fsp < f->speed_min) fsp = f->speed_min;
 		if(fsp > f->speed_max) fsp = f->speed_max;

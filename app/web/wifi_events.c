@@ -353,7 +353,7 @@ void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *evt)
 #endif
 			open_all_service((wifi_softap_get_station_num() == 0)? 0: 1);
 			// iot_cloud
-			//iot_cloud_send(1); // start
+			iot_cloud_send(1); // start
 			//
 			break;
 		}

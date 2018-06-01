@@ -45,4 +45,4 @@ ESP-07 module:
 
 ![alt tag](https://github.com/vad7/WirelessCO2_esp8266/blob/master/esp-07.jpg)
 
-Based on [PowerMeter](https://github.com/vad7/PowerMeter.git)
+Для компиляции используется [Unofficial Developer Kit](http://esp8266.ru/forum/forums/devkit/).<br><br>

@@ -2,6 +2,7 @@
 #define __PING_H__
 #include "lwip/ip_addr.h"
 #include "lwip/icmp.h"
+
 /**
  * PING_USE_SOCKETS: Set to 1 to use sockets, otherwise the raw api is used
  */
