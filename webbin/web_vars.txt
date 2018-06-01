@@ -171,10 +171,6 @@ wifi_st_bssid
 inc:footer.inc
 wifi_st_aucn
 wifi_scan
-cfg_co2_fans
-cfg_fan_override_day
-cfg_fan_override_night
-cfg_fan_flags
 inc:menumain.inc
 cfg_fan_name
 cfg_fan_rf_ch
@@ -184,6 +180,10 @@ cfg_fan_max
 cfg_fan_day
 cfg_fan_night
 inc:footer.inc
+cfg_co2_fans
+cfg_fan_override_day
+cfg_fan_override_night
+cfg_fan_flags
 inc:menumain.inc
 cfg_vars_fans_speed_ov
 cfg_vars_receive_timeout
