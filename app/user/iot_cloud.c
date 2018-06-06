@@ -371,23 +371,31 @@ void ICACHE_FLASH_ATTR iot_data_clear(void)
 	}
 }
 
+#define CONNECTION_LOST_FLAG_MAX 10 // sec
+uint8_t connection_lost_flag = 0;
 // 1 - start, 0 - end
 void ICACHE_FLASH_ATTR iot_cloud_send(uint8 fwork)
 {
 	if((wifi_get_opmode() & STATION_MODE) == 0) return;
-	if(wifi_station_get_connect_status() != STATION_GOT_IP) return; // st connected?
-	if(!flg_open_all_service) {// some problem with WiFi here
+	if(wifi_station_get_connect_status() != STATION_GOT_IP) { // st connected?
+		if(++connection_lost_flag > CONNECTION_LOST_FLAG_MAX) goto xReconnect;
+		return;
+	}
+	if(!flg_open_all_service || wifi_station_get_rssi() == 31) {// some problem with WiFi here
 //		if(++wifi_reconnect_attempt > WIFI_ATTEMPTS_BEFORE_RECONNECT) {
 //			wifi_set_opmode_current(WIFI_DISABLED);
 //		}
+xReconnect:
 		wifi_station_disconnect();
 		wifi_set_opmode_current(WIFI_DISABLED);
 		#ifdef DEBUG_TO_RAM
 			dbg_printf("WiFiR %u\n", dbg_next_time());
 		#endif
+//		ets_delay_us(100);
 		wifi_set_opmode_current(wificonfig.b.mode);
 		wifi_station_connect();
 	}
+	connection_lost_flag = 0;
 	if(!cfg_co2.iot_cloud_enable) return; // iot cloud disabled
 	#if DEBUGSOO > 4
 		os_printf("iot_send: %d, %d: %x %x, IP%d(%d)\n", iot_tc_init_flg, fwork, iot_data_first, iot_data_processing, wifi_station_get_connect_status(), flg_open_all_service);
